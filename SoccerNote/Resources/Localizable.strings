@@ -1,0 +1,93 @@
+// SoccerNote/Resources/Localizable.strings
+
+// タブ名
+"tab.home" = "ホーム";
+"tab.records" = "記録";
+"tab.add" = "追加";
+"tab.stats" = "統計";
+"tab.goals" = "目標";
+
+// 活動タイプ
+"activity.match" = "試合";
+"activity.practice" = "練習";
+
+// 一般的なラベル
+"general.save" = "保存";
+"general.cancel" = "キャンセル";
+"general.edit" = "編集";
+"general.delete" = "削除";
+"general.done" = "完了";
+
+// ホーム画面
+"home.title" = "SoccerNote";
+"home.subtitle" = "今日のパフォーマンスを記録しよう";
+"home.recent" = "最近の記録";
+"home.progress" = "目標進捗";
+"home.no_records" = "まだ記録がありません";
+"home.no_goals" = "目標を設定していません";
+
+// 記録画面
+"records.title" = "記録履歴";
+"records.search" = "検索";
+"records.filter.all" = "すべて";
+"records.empty.title" = "記録がありません";
+"records.empty.message" = "「追加」タブから新しい記録を追加しましょう";
+"records.empty.action" = "記録を追加";
+
+// 追加画面
+"add.title" = "記録追加";
+"add.type" = "記録タイプ";
+"add.basic_info" = "基本情報";
+"add.date" = "日時";
+"add.location" = "場所";
+"add.notes" = "メモ";
+"add.rating" = "評価";
+"add.match_details" = "試合詳細";
+"add.practice_details" = "練習詳細";
+"add.opponent" = "対戦相手";
+"add.score" = "スコア";
+"add.goals" = "ゴール";
+"add.assists" = "アシスト";
+"add.playing_time" = "出場時間";
+"add.performance" = "パフォーマンス評価";
+"add.focus_area" = "フォーカスエリア";
+"add.duration" = "練習時間";
+"add.intensity" = "練習強度";
+"add.learnings" = "学んだこと";
+"add.save" = "記録を保存";
+"add.success.title" = "保存完了";
+"add.success.message" = "記録が保存されました";
+
+// 統計画面
+"stats.title" = "統計";
+"stats.period.week" = "週間";
+"stats.period.month" = "月間";
+"stats.period.season" = "シーズン";
+"stats.period.all" = "全期間";
+"stats.match" = "試合統計";
+"stats.match.count" = "試合数";
+"stats.match.goals" = "得点";
+"stats.match.assists" = "アシスト";
+"stats.match.performance" = "平均パフォーマンス";
+"stats.practice" = "練習統計";
+"stats.practice.count" = "練習回数";
+"stats.practice.duration" = "総練習時間";
+"stats.practice.intensity" = "平均強度";
+"stats.performance" = "パフォーマンス分析";
+"stats.growth" = "成長推移";
+
+// 目標画面
+"goals.title" = "目標";
+"goals.active" = "進行中の目標";
+"goals.completed" = "達成済みの目標";
+"goals.no_active" = "進行中の目標はありません";
+"goals.no_completed" = "達成済みの目標はありません";
+"goals.add" = "目標追加";
+"goals.info" = "目標情報";
+"goals.deadline" = "期限";
+"goals.save" = "目標を保存";
+"goals.detail" = "目標詳細";
+"goals.progress" = "進捗状況";
+"goals.achieved" = "達成済み";
+"goals.in_progress" = "進行中";
+"goals.description" = "詳細";
