@@ -1,7 +1,9 @@
-//
-//  ActivityType.swift
-//  SoccerNote
-//
-//  Created by iwamoto rinka on 2025/03/16.
-//
+// SoccerNote/Models/ActivityType.swift
+import Foundation
 
+enum ActivityType: String, CaseIterable, Identifiable {
+    case match = "試合"
+    case practice = "練習"
+    
+    var id: String { self.rawValue }
+}
