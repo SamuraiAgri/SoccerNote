@@ -229,10 +229,6 @@ struct StatsView: View {
                         .padding(.horizontal)
                     }
                     
-                    // パフォーマンス分析
-                    PerformanceRadarChartView()
-                        .padding(.horizontal)
-                    
                     // 成長推移
                     GrowthChartView(period: selectedPeriod)
                         .padding(.horizontal)
