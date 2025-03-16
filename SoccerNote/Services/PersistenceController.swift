@@ -29,7 +29,7 @@ struct PersistenceController {
         let viewContext = controller.container.viewContext
         
         // サンプルの活動記録
-        let activity = NSEntityDescription.insertNewObject(forEntityName: "Activity", into: viewContext) as! NSManagedObject
+        let activity = NSEntityDescription.insertNewObject(forEntityName: "Activity", into: viewContext)
         activity.setValue(Date(), forKey: "date")
         activity.setValue("match", forKey: "type")
         activity.setValue("市民グラウンド", forKey: "location")
@@ -38,7 +38,7 @@ struct PersistenceController {
         activity.setValue(UUID(), forKey: "id")
         
         // サンプルの試合記録
-        let match = NSEntityDescription.insertNewObject(forEntityName: "Match", into: viewContext) as! NSManagedObject
+        let match = NSEntityDescription.insertNewObject(forEntityName: "Match", into: viewContext)
         match.setValue("FCトーキョー", forKey: "opponent")
         match.setValue("2-1", forKey: "score")
         match.setValue(1, forKey: "goalsScored")
@@ -49,7 +49,7 @@ struct PersistenceController {
         match.setValue(activity, forKey: "activity")
         
         // サンプルの目標
-        let goal = NSEntityDescription.insertNewObject(forEntityName: "Goal", into: viewContext) as! NSManagedObject
+        let goal = NSEntityDescription.insertNewObject(forEntityName: "Goal", into: viewContext)
         goal.setValue("シーズン10ゴール", forKey: "title")
         goal.setValue("今シーズンは最低10ゴールを決める", forKey: "goalDescription")
         goal.setValue(Date().addingTimeInterval(60*60*24*90), forKey: "deadline") // 90日後

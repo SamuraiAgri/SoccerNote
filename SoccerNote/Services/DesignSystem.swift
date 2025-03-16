@@ -4,7 +4,7 @@ import SwiftUI
 // アプリのデザインガイド
 struct AppDesign {
     // メインカラー
-    static let primaryColor = Color("PrimaryColor")
+    static let primaryColor = Color("AppPrimaryColor")
     static let secondaryColor = Color("SecondaryColor")
     static let accentColor = Color("AccentColor")
     

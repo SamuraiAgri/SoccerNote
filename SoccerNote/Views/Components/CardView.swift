@@ -1,45 +1,40 @@
-// SoccerNote/Views/Components/EmptyStateView.swift
+// SoccerNote/Views/Components/CardView.swift
 import SwiftUI
 
-struct EmptyStateView: View {
+struct CardView: View {
     let title: String
-    let message: String
-    let icon: String
-    var buttonTitle: String? = nil
-    var buttonAction: (() -> Void)? = nil
+    let content: String
+    var icon: String? = nil
     
     var body: some View {
-        VStack(spacing: AppDesign.Spacing.large) {
-            Image(systemName: icon)
-                .font(.system(size: 60))
-                .foregroundColor(AppDesign.secondaryText)
-            
-            Text(title)
-                .font(.appHeadline())
-            
-            Text(message)
-                .font(.appCaption())
-                .multilineTextAlignment(.center)
-            
-            if let buttonTitle = buttonTitle, let buttonAction = buttonAction {
-                Button(action: buttonAction) {
-                    Text(buttonTitle)
+        VStack(alignment: .leading, spacing: AppDesign.Spacing.medium) {
+            HStack {
+                if let icon = icon {
+                    Image(systemName: icon)
+                        .font(.title2)
+                        .foregroundColor(AppDesign.primaryColor)
                 }
-                .buttonStyle(PrimaryButtonStyle())
-                .padding(.horizontal, AppDesign.Spacing.large)
+                
+                Text(title)
+                    .font(.appHeadline())
             }
+            
+            Text(content)
+                .font(.appBody())
         }
         .padding()
-        .frame(maxWidth: .infinity)
+        .background(AppDesign.backgroundColor)
+        .cornerRadius(AppDesign.CornerRadius.medium)
+        .shadow(color: Color.black.opacity(0.1), radius: 3, x: 0, y: 1)
     }
 }
 
 #Preview {
-    EmptyStateView(
-        title: "記録がありません",
-        message: "「追加」タブから新しい記録を追加しましょう",
-        icon: "note.text",
-        buttonTitle: "記録を追加",
-        buttonAction: {}
+    CardView(
+        title: "今日のトレーニング",
+        content: "ドリブル練習とシュート練習を行いました。",
+        icon: "figure.soccer"
     )
+    .previewLayout(.sizeThatFits)
+    .padding()
 }
