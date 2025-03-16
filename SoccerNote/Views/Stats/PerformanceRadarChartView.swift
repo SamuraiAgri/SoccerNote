@@ -47,46 +47,43 @@ struct PerformanceRadarChartView: View {
                     HStack {
                         Text("スピード")
                             .font(.caption)
-                            .offset(
-                                Text("スピード")
-                                                            .font(.caption)
-                                                            .offset(x: -80, y: -30)
-                                                        
-                                                        Spacer()
-                                                        
-                                                        Text("テクニック")
-                                                            .font(.caption)
-                                                            .offset(x: 80, y: -30)
-                                                    }
-                                                    .frame(width: 200)
-                                                    
-                                                    Spacer()
-                                                    
-                                                    HStack {
-                                                        Text("守備力")
-                                                            .font(.caption)
-                                                            .offset(x: -60, y: 30)
-                                                        
-                                                        Spacer()
-                                                        
-                                                        Text("スタミナ")
-                                                            .font(.caption)
-                                                            .offset(x: 60, y: 30)
-                                                    }
-                                                    .frame(width: 200)
-                                                }
-                                                .frame(width: 300, height: 300)
-                                            }
-                                            
-                                            Spacer()
-                                        }
-                                        .frame(maxWidth: .infinity)
-                                        .padding()
-                                        .background(AppDesign.secondaryBackground)
-                                        .cornerRadius(AppDesign.CornerRadius.medium)
-                                    }
-                                }
+                            .offset(x: -80, y: -30)
+                        
+                        Spacer()
+                        
+                        Text("テクニック")
+                            .font(.caption)
+                            .offset(x: 80, y: -30)
+                    }
+                    .frame(width: 200)
+                    
+                    Spacer()
+                    
+                    HStack {
+                        Text("守備力")
+                            .font(.caption)
+                            .offset(x: -60, y: 30)
+                        
+                        Spacer()
+                        
+                        Text("スタミナ")
+                            .font(.caption)
+                            .offset(x: 60, y: 30)
+                    }
+                    .frame(width: 200)
+                }
+                .frame(width: 300, height: 300)
+            }
+            
+            Spacer()
+        }
+        .frame(maxWidth: .infinity)
+        .padding()
+        .background(AppDesign.secondaryBackground)
+        .cornerRadius(AppDesign.CornerRadius.medium)
+    }
+}
 
-                                #Preview {
-                                    PerformanceRadarChartView()
-                                }
+#Preview {
+    PerformanceRadarChartView()
+}
