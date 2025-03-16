@@ -1,22 +1,3 @@
-// SoccerNote/Views/Components/CardView.swift
-import SwiftUI
-
-struct CardView<Content: View>: View {
-    let content: Content
-    
-    init(@ViewBuilder content: () -> Content) {
-        self.content = content()
-    }
-    
-    var body: some View {
-        content
-            .padding()
-            .background(AppDesign.secondaryBackground)
-            .cornerRadius(AppDesign.CornerRadius.medium)
-            .shadow(radius: 1)
-    }
-}
-
 // SoccerNote/Views/Components/EmptyStateView.swift
 import SwiftUI
 
@@ -51,4 +32,14 @@ struct EmptyStateView: View {
         .padding()
         .frame(maxWidth: .infinity)
     }
+}
+
+#Preview {
+    EmptyStateView(
+        title: "記録がありません",
+        message: "「追加」タブから新しい記録を追加しましょう",
+        icon: "note.text",
+        buttonTitle: "記録を追加",
+        buttonAction: {}
+    )
 }

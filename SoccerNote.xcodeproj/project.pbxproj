@@ -10,22 +10,9 @@
 		2109DAD42D85B1DF00FECB18 /* SoccerNote.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = SoccerNote.app; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
 
-/* Begin PBXFileSystemSynchronizedBuildFileExceptionSet section */
-		2109DB0F2D86468100FECB18 /* Exceptions for "SoccerNote" folder in "SoccerNote" target */ = {
-			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
-			membershipExceptions = (
-				Views/Home/HomeView.swift,
-			);
-			target = 2109DAD32D85B1DF00FECB18 /* SoccerNote */;
-		};
-/* End PBXFileSystemSynchronizedBuildFileExceptionSet section */
-
 /* Begin PBXFileSystemSynchronizedRootGroup section */
 		2109DAD62D85B1DF00FECB18 /* SoccerNote */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
-			exceptions = (
-				2109DB0F2D86468100FECB18 /* Exceptions for "SoccerNote" folder in "SoccerNote" target */,
-			);
 			path = SoccerNote;
 			sourceTree = "<group>";
 		};
