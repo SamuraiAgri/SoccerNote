@@ -1,4 +1,3 @@
-// SoccerNote/Views/MainTabView.swift
 import SwiftUI
 
 struct MainTabView: View {
@@ -40,9 +39,7 @@ struct MainTabView: View {
     }
 }
 
-struct MainTabView_Previews: PreviewProvider {
-    static var previews: some View {
-        MainTabView()
-            .environment(\.managedObjectContext, PersistenceController.preview.container.viewContext)
-    }
+#Preview {
+    MainTabView()
+        .environment(\.managedObjectContext, PersistenceController.preview.container.viewContext)
 }

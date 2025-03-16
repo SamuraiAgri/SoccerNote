@@ -1,4 +1,3 @@
-// SoccerNote/Views/Records/ActivityDetailView.swift
 import SwiftUI
 import CoreData
 
@@ -167,11 +166,4 @@ struct ActivityDetailView: View {
         formatter.locale = Locale(identifier: "ja_JP")
         return formatter.string(from: date)
     }
-}
-
-#Preview {
-    let context = PersistenceController.preview.container.viewContext
-    let request = NSFetchRequest<NSManagedObject>(entityName: "Activity")
-    let activities = try! context.fetch(request)
-    return ActivityDetailView(activity: activities.first!)
 }

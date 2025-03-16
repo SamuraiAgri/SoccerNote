@@ -1,4 +1,3 @@
-// SoccerNote/Views/Records/EditPracticeView.swift
 import SwiftUI
 import CoreData
 
@@ -30,7 +29,7 @@ struct EditPracticeView: View {
         self._rating = State(initialValue: activity.value(forKey: "rating") as? Int ?? 3)
         
         // 練習詳細を取得して初期化
-        let practiceDetails = fetchPracticeDetails(for: activity)
+        let practiceDetails = EditPracticeView.fetchPracticeDetails(for: activity)
         
         self._focus = State(initialValue: practiceDetails?.value(forKey: "focus") as? String ?? "")
         self._duration = State(initialValue: practiceDetails?.value(forKey: "duration") as? Int ?? 60)
@@ -165,12 +164,4 @@ struct EditPracticeView: View {
     private func fetchPracticeDetails(for activity: NSManagedObject) -> NSManagedObject? {
         return Self.fetchPracticeDetails(for: activity)
     }
-}
-
-#Preview {
-    let context = PersistenceController.preview.container.viewContext
-    let request = NSFetchRequest<NSManagedObject>(entityName: "Activity")
-    request.predicate = NSPredicate(format: "type == %@", "practice")
-    let activities = try! context.fetch(request)
-    return EditPracticeView(activity: activities.first!)
 }

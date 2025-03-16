@@ -1,4 +1,3 @@
-// SoccerNote/SoccerNoteApp.swift
 import SwiftUI
 
 @main

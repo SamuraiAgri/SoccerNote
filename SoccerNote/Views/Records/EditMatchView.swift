@@ -1,4 +1,3 @@
-// SoccerNote/Views/Records/EditMatchView.swift
 import SwiftUI
 import CoreData
 
@@ -32,7 +31,7 @@ struct EditMatchView: View {
         self._rating = State(initialValue: activity.value(forKey: "rating") as? Int ?? 3)
         
         // 試合詳細を取得して初期化
-        let matchDetails = fetchMatchDetails(for: activity)
+        let matchDetails = EditMatchView.fetchMatchDetails(for: activity)
         
         self._opponent = State(initialValue: matchDetails?.value(forKey: "opponent") as? String ?? "")
         self._score = State(initialValue: matchDetails?.value(forKey: "score") as? String ?? "")
@@ -172,12 +171,4 @@ struct EditMatchView: View {
     private func fetchMatchDetails(for activity: NSManagedObject) -> NSManagedObject? {
         return Self.fetchMatchDetails(for: activity)
     }
-}
-
-#Preview {
-    let context = PersistenceController.preview.container.viewContext
-    let request = NSFetchRequest<NSManagedObject>(entityName: "Activity")
-    request.predicate = NSPredicate(format: "type == %@", "match")
-    let activities = try! context.fetch(request)
-    return EditMatchView(activity: activities.first!)
 }

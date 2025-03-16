@@ -1,4 +1,3 @@
-// SoccerNote/Views/Goals/AddGoalView.swift
 import SwiftUI
 import CoreData
 
@@ -51,9 +50,4 @@ struct AddGoalView: View {
         
         presentationMode.wrappedValue.dismiss()
     }
-}
-
-#Preview {
-    let context = PersistenceController.preview.container.viewContext
-    return AddGoalView(goalViewModel: GoalViewModel(viewContext: context))
 }

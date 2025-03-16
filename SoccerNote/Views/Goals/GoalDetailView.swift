@@ -1,4 +1,3 @@
-// SoccerNote/Views/Goals/GoalDetailView.swift
 import SwiftUI
 import CoreData
 
@@ -106,7 +105,7 @@ struct GoalDetailView: View {
                 Text("詳細")
                     .font(.headline)
                 
-                Text(goal.value(forKey: "description") as? String ?? "")
+                Text(goal.value(forKey: "goalDescription") as? String ?? "")
                     .padding()
                     .frame(maxWidth: .infinity, alignment: .leading)
                     .background(AppDesign.secondaryBackground)
@@ -146,14 +145,4 @@ struct GoalDetailView: View {
         formatter.locale = Locale(identifier: "ja_JP")
         return formatter.string(from: date)
     }
-}
-
-#Preview {
-    let context = PersistenceController.preview.container.viewContext
-    let request = NSFetchRequest<NSManagedObject>(entityName: "Goal")
-    let goals = try! context.fetch(request)
-    return GoalDetailView(
-        goal: goals.first!,
-        goalViewModel: GoalViewModel(viewContext: context)
-    )
 }

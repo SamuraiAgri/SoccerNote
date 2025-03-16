@@ -1,9 +1,8 @@
-// SoccerNote/Services/PersistenceController.swift
 import CoreData
 
 struct PersistenceController {
     static let shared = PersistenceController()
-    
+
     let container: NSPersistentContainer
     
     init(inMemory: Bool = false) {
@@ -52,7 +51,7 @@ struct PersistenceController {
         // サンプルの目標
         let goal = NSEntityDescription.insertNewObject(forEntityName: "Goal", into: viewContext) as! NSManagedObject
         goal.setValue("シーズン10ゴール", forKey: "title")
-        goal.setValue("今シーズンは最低10ゴールを決める", forKey: "description")
+        goal.setValue("今シーズンは最低10ゴールを決める", forKey: "goalDescription")
         goal.setValue(Date().addingTimeInterval(60*60*24*90), forKey: "deadline") // 90日後
         goal.setValue(false, forKey: "isCompleted")
         goal.setValue(20, forKey: "progress") // 20%達成
