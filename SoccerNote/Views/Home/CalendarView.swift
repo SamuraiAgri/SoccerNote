@@ -4,6 +4,7 @@ import SwiftUI
 struct CalendarView: View {
     @State private var selectedDate = Date()
     @State private var currentMonth = Date()
+    @GestureState private var dragOffset: CGFloat = 0
     
     let columns = Array(repeating: GridItem(.flexible()), count: 7)
     
@@ -17,13 +18,13 @@ struct CalendarView: View {
                     }
                 }) {
                     Image(systemName: "chevron.left")
-                        .foregroundColor(AppDesign.primaryColor)
+                        .foregroundColor(.green)
                 }
                 
                 Spacer()
                 
                 Text(monthYearText)
-                    .font(.appHeadline())
+                    .font(.headline)
                 
                 Spacer()
                 
@@ -33,7 +34,7 @@ struct CalendarView: View {
                     }
                 }) {
                     Image(systemName: "chevron.right")
-                        .foregroundColor(AppDesign.primaryColor)
+                        .foregroundColor(.green)
                 }
             }
             .padding(.bottom)
@@ -44,7 +45,7 @@ struct CalendarView: View {
                     Text(day)
                         .font(.caption)
                         .frame(maxWidth: .infinity)
-                        .foregroundColor(day == "日" ? .red : AppDesign.primaryText)
+                        .foregroundColor(day == "日" ? .red : .primary)
                 }
             }
             
@@ -65,8 +66,28 @@ struct CalendarView: View {
         }
         .padding()
         .background(Color.white)
-        .cornerRadius(AppDesign.CornerRadius.medium)
+        .cornerRadius(10)
         .shadow(radius: 1)
+        .gesture(
+            DragGesture()
+                .updating($dragOffset) { value, state, _ in
+                    state = value.translation.width
+                }
+                .onEnded { value in
+                    let threshold: CGFloat = 50
+                    if value.translation.width < -threshold {
+                        // 左スワイプで次の月へ
+                        withAnimation {
+                            currentMonth = Calendar.current.date(byAdding: .month, value: 1, to: currentMonth) ?? currentMonth
+                        }
+                    } else if value.translation.width > threshold {
+                        // 右スワイプで前の月へ
+                        withAnimation {
+                            currentMonth = Calendar.current.date(byAdding: .month, value: -1, to: currentMonth) ?? currentMonth
+                        }
+                    }
+                }
+        )
     }
     
     // ヘルパープロパティとメソッド
@@ -132,7 +153,7 @@ struct CalendarDayView: View {
     var body: some View {
         ZStack {
             Circle()
-                .fill(isSelected ? AppDesign.primaryColor : Color.clear)
+                .fill(isSelected ? Color.green : Color.clear)
                 .frame(width: 35, height: 35)
             
             Text("\(Calendar.current.component(.day, from: date))")
@@ -148,11 +169,15 @@ struct CalendarDayView: View {
         let weekday = calendar.component(.weekday, from: date)
         
         if calendar.isDateInToday(date) {
-            return AppDesign.secondaryColor
+            return .orange // アクセントカラー
         } else if weekday == 1 { // 日曜日
             return .red
         } else {
-            return AppDesign.primaryText
+            return .primary
         }
     }
+}
+
+#Preview {
+    CalendarView()
 }

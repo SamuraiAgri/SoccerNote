@@ -2,88 +2,120 @@
 import SwiftUI
 
 struct PerformanceRadarChartView: View {
-    // 実際のアプリではSwiftUIのPath等を使って描画する
-    // ここではプレースホルダーとしてシンプルな表示にしている
-    
     var body: some View {
-        VStack(alignment: .leading) {
+        VStack(alignment: .leading, spacing: 10) {
+            // ヘッダー
             Text("パフォーマンス分析")
-                .font(.appHeadline())
+                .font(.headline)
             
-            Spacer()
+            Text("各スキルの評価（5段階中）")
+                .font(.caption)
+                .foregroundColor(.secondary)
             
-            ZStack {
-                // 背景の円
+            // シンプルな代替ビュー
+            SimpleRadarChart()
+                .frame(height: 280)
+                .padding(.vertical, 10)
+            
+            // 凡例
+            HStack {
                 Circle()
-                    .stroke(Color.gray.opacity(0.2), lineWidth: 1)
+                    .fill(Color.green)
+                    .frame(width: 10, height: 10)
                 
-                // 五角形
-                Path { path in
-                    let center = CGPoint(x: 150, y: 150)
-                    let radius: CGFloat = 100
-                    let angles = [0, 72, 144, 216, 288].map { CGFloat($0) * .pi / 180 }
-                    
-                    let points = angles.map { angle in
-                        CGPoint(
-                            x: center.x + radius * 0.7 * cos(angle),
-                            y: center.y + radius * 0.7 * sin(angle)
-                        )
-                    }
-                    
-                    path.move(to: points[0])
-                    for point in points[1...] {
-                        path.addLine(to: point)
-                    }
-                    path.closeSubpath()
-                }
-                .fill(AppDesign.primaryColor.opacity(0.5))
+                Text("あなたのデータ")
+                    .font(.caption)
                 
-                // 軸ラベル
+                Spacer()
+                
+                Text("タップして詳細を表示")
+                    .font(.caption)
+                    .foregroundColor(.blue)
+            }
+        }
+        .padding()
+        .background(Color.white)
+        .cornerRadius(10)
+        .shadow(color: Color.black.opacity(0.05), radius: 2, x: 0, y: 1)
+    }
+}
+
+struct SimpleRadarChart: View {
+    var body: some View {
+        // 簡略化された静的なレーダーチャート
+        Image(systemName: "pentagon")
+            .resizable()
+            .aspectRatio(contentMode: .fit)
+            .foregroundColor(Color.green.opacity(0.5))
+            .overlay(
+                Image(systemName: "pentagon")
+                    .resizable()
+                    .aspectRatio(contentMode: .fit)
+                    .foregroundColor(Color.green)
+                    .blendMode(.sourceAtop)
+            )
+            .padding(40)
+            .background(
                 VStack {
+                    // 上部ラベル
                     Text("得点力")
                         .font(.caption)
-                        .offset(y: -100)
+                        .padding(.bottom, 70)
                     
                     HStack {
-                        Text("スピード")
+                        // 左側ラベル
+                        Text("スタミナ")
                             .font(.caption)
-                            .offset(x: -80, y: -30)
+                            .padding(.trailing, 40)
                         
                         Spacer()
                         
-                        Text("テクニック")
+                        // 右側ラベル
+                        Text("スピード")
                             .font(.caption)
-                            .offset(x: 80, y: -30)
+                            .padding(.leading, 40)
                     }
-                    .frame(width: 200)
                     
                     Spacer()
                     
                     HStack {
+                        // 左下ラベル
                         Text("守備力")
                             .font(.caption)
-                            .offset(x: -60, y: 30)
+                            .padding(.trailing, 40)
                         
                         Spacer()
                         
-                        Text("スタミナ")
+                        // 右下ラベル
+                        Text("テクニック")
                             .font(.caption)
-                            .offset(x: 60, y: 30)
+                            .padding(.leading, 40)
                     }
-                    .frame(width: 200)
+                    
+                    Spacer()
                 }
-                .frame(width: 300, height: 300)
-            }
-            
-            Spacer()
-        }
-        .frame(maxWidth: .infinity)
-        .padding()
-        .background(AppDesign.secondaryBackground)
-        .cornerRadius(AppDesign.CornerRadius.medium)
+            )
+            .overlay(
+                // 同心円
+                ZStack {
+                    Circle()
+                        .stroke(Color.gray.opacity(0.2), lineWidth: 1)
+                        .frame(width: 200)
+                    Circle()
+                        .stroke(Color.gray.opacity(0.2), lineWidth: 1)
+                        .frame(width: 150)
+                    Circle()
+                        .stroke(Color.gray.opacity(0.2), lineWidth: 1)
+                        .frame(width: 100)
+                    Circle()
+                        .stroke(Color.gray.opacity(0.2), lineWidth: 1)
+                        .frame(width: 50)
+                }
+            )
     }
 }
 
+// プレビュー
 #Preview {
     PerformanceRadarChartView()
 }
