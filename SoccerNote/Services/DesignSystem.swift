@@ -3,18 +3,18 @@ import SwiftUI
 
 // アプリのデザインガイド
 struct AppDesign {
-    // メインカラー
-    static let primaryColor = Color("AppPrimaryColor")
-    static let secondaryColor = Color("SecondaryColor")
-    static let accentColor = Color("AccentColor")
+    // メインカラー - システムカラーを使用
+    static let primaryColor = Color.green // サッカーフィールド風の緑
+    static let secondaryColor = Color.orange // アクセントカラー
+    static let accentColor = Color.blue
     
     // テキストカラー
-    static let primaryText = Color("PrimaryTextColor")
-    static let secondaryText = Color("SecondaryTextColor")
+    static let primaryText = Color.primary
+    static let secondaryText = Color.secondary
     
     // コンポーネントカラー
-    static let backgroundColor = Color.white
-    static let secondaryBackground = Color("BackgroundSecondary")
+    static let backgroundColor = Color(UIColor.systemBackground)
+    static let secondaryBackground = Color(UIColor.secondarySystemBackground)
     static let dividerColor = Color.gray.opacity(0.3)
     
     // フォントサイズ

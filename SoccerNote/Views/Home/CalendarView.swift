@@ -3,6 +3,7 @@ import SwiftUI
 
 struct CalendarView: View {
     @State private var selectedDate = Date()
+    @State private var currentMonth = Date()
     
     let columns = Array(repeating: GridItem(.flexible()), count: 7)
     
@@ -11,7 +12,9 @@ struct CalendarView: View {
             // カレンダーヘッダー
             HStack {
                 Button(action: {
-                    selectedDate = Calendar.current.date(byAdding: .month, value: -1, to: selectedDate) ?? selectedDate
+                    withAnimation {
+                        currentMonth = Calendar.current.date(byAdding: .month, value: -1, to: currentMonth) ?? currentMonth
+                    }
                 }) {
                     Image(systemName: "chevron.left")
                         .foregroundColor(AppDesign.primaryColor)
@@ -25,7 +28,9 @@ struct CalendarView: View {
                 Spacer()
                 
                 Button(action: {
-                    selectedDate = Calendar.current.date(byAdding: .month, value: 1, to: selectedDate) ?? selectedDate
+                    withAnimation {
+                        currentMonth = Calendar.current.date(byAdding: .month, value: 1, to: currentMonth) ?? currentMonth
+                    }
                 }) {
                     Image(systemName: "chevron.right")
                         .foregroundColor(AppDesign.primaryColor)
@@ -69,16 +74,16 @@ struct CalendarView: View {
         let formatter = DateFormatter()
         formatter.dateFormat = "yyyy年M月"
         formatter.locale = Locale(identifier: "ja_JP")
-        return formatter.string(from: selectedDate)
+        return formatter.string(from: currentMonth)
     }
     
     private var daysInMonth: [CalendarDay] {
         let calendar = Calendar.current
         
-        let month = calendar.component(.month, from: selectedDate)
-        let year = calendar.component(.year, from: selectedDate)
+        let month = calendar.component(.month, from: currentMonth)
+        let year = calendar.component(.year, from: currentMonth)
         
-        guard let monthRange = calendar.range(of: .day, in: .month, for: selectedDate),
+        guard let monthRange = calendar.range(of: .day, in: .month, for: currentMonth),
               let firstDayOfMonth = calendar.date(from: DateComponents(year: year, month: month, day: 1)) else {
             return []
         }
@@ -150,8 +155,4 @@ struct CalendarDayView: View {
             return AppDesign.primaryText
         }
     }
-}
-
-#Preview {
-    CalendarView()
 }

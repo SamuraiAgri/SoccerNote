@@ -1,3 +1,4 @@
+// SoccerNote/Views/Goals/GoalsView.swift
 import SwiftUI
 import CoreData
 
@@ -14,40 +15,79 @@ struct GoalsView: View {
     
     var body: some View {
         NavigationView {
-            List {
-                // アクティブな目標
-                Section(header: Text("進行中の目標")) {
-                    if activeGoals.isEmpty {
-                        Text("進行中の目標はありません")
-                            .foregroundColor(AppDesign.secondaryText)
-                            .padding(.vertical, 10)
-                    } else {
-                        ForEach(activeGoals, id: \.self) { goal in
-                            NavigationLink(destination: GoalDetailView(goal: goal, goalViewModel: goalViewModel)) {
-                                GoalRow(goal: goal)
+            VStack {
+                if goalViewModel.goals.isEmpty {
+                    VStack(spacing: 30) {
+                        Spacer()
+                        
+                        VStack(spacing: 15) {
+                            Image(systemName: "flag")
+                                .font(.system(size: 50))
+                                .foregroundColor(AppDesign.secondaryText)
+                            
+                            Text("目標が設定されていません")
+                                .font(.headline)
+                            
+                            Text("目標を設定して、パフォーマンス向上に役立てましょう")
+                                .font(.subheadline)
+                                .foregroundColor(AppDesign.secondaryText)
+                                .multilineTextAlignment(.center)
+                                .padding(.horizontal)
+                        }
+                        
+                        Button(action: {
+                            showingAddGoalSheet = true
+                        }) {
+                            HStack {
+                                Image(systemName: "plus.circle.fill")
+                                Text("新しい目標を追加")
+                            }
+                            .padding()
+                            .foregroundColor(.white)
+                            .background(AppDesign.primaryColor)
+                            .cornerRadius(AppDesign.CornerRadius.medium)
+                        }
+                        
+                        Spacer()
+                    }
+                    .padding()
+                } else {
+                    List {
+                        // アクティブな目標
+                        Section(header: Text("進行中の目標")) {
+                            if activeGoals.isEmpty {
+                                Text("進行中の目標はありません")
+                                    .foregroundColor(AppDesign.secondaryText)
+                                    .padding(.vertical, 10)
+                            } else {
+                                ForEach(activeGoals, id: \.self) { goal in
+                                    NavigationLink(destination: GoalDetailView(goal: goal, goalViewModel: goalViewModel)) {
+                                        GoalRow(goal: goal)
+                                    }
+                                }
+                                .onDelete(perform: deleteActiveGoal)
                             }
                         }
-                        .onDelete(perform: deleteActiveGoal)
-                    }
-                }
-                
-                // 達成済みの目標
-                Section(header: Text("達成済みの目標")) {
-                    if completedGoals.isEmpty {
-                        Text("達成済みの目標はありません")
-                            .foregroundColor(AppDesign.secondaryText)
-                            .padding(.vertical, 10)
-                    } else {
-                        ForEach(completedGoals, id: \.self) { goal in
-                            NavigationLink(destination: GoalDetailView(goal: goal, goalViewModel: goalViewModel)) {
-                                GoalRow(goal: goal)
+                        
+                        // 達成済みの目標
+                        Section(header: Text("達成済みの目標")) {
+                            if completedGoals.isEmpty {
+                                Text("達成済みの目標はありません")
+                                    .foregroundColor(AppDesign.secondaryText)
+                                    .padding(.vertical, 10)
+                            } else {
+                                ForEach(completedGoals, id: \.self) { goal in
+                                    NavigationLink(destination: GoalDetailView(goal: goal, goalViewModel: goalViewModel)) {
+                                        GoalRow(goal: goal)
+                                    }
+                                }
+                                .onDelete(perform: deleteCompletedGoal)
                             }
                         }
-                        .onDelete(perform: deleteCompletedGoal)
                     }
+                    .listStyle(InsetGroupedListStyle())
                 }
             }
-            .listStyle(InsetGroupedListStyle())
             .navigationTitle("目標")
             .navigationBarItems(trailing: Button(action: {
                 showingAddGoalSheet = true

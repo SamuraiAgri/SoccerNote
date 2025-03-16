@@ -1,3 +1,4 @@
+// SoccerNote/Views/Records/RecordListView.swift
 import SwiftUI
 import CoreData
 
@@ -15,9 +16,9 @@ struct RecordListView: View {
     
     var body: some View {
         NavigationView {
-            VStack {
+            VStack(spacing: 0) {
                 // 検索バーとフィルターオプション
-                VStack {
+                VStack(spacing: 10) {
                     HStack {
                         Image(systemName: AppIcons.Function.search)
                             .foregroundColor(AppDesign.secondaryText)
@@ -55,6 +56,8 @@ struct RecordListView: View {
                     }
                 }
                 .padding(.horizontal)
+                .padding(.top, 10)
+                .background(Color(UIColor.systemBackground))
                 
                 // 記録リスト
                 if filteredActivities.isEmpty {
@@ -68,6 +71,9 @@ struct RecordListView: View {
                             // 実際の実装ではタブインデックスを変更する方法を追加する必要があります
                         }
                     )
+                    .padding(.top, 50)
+                    .frame(maxWidth: .infinity, maxHeight: .infinity)
+                    .background(Color(UIColor.systemBackground))
                 } else {
                     List {
                         ForEach(filteredActivities, id: \.self) { activity in
@@ -81,6 +87,7 @@ struct RecordListView: View {
                 }
             }
             .navigationTitle("記録履歴")
+            .navigationBarTitleDisplayMode(.inline)
             .navigationBarItems(trailing: EditButton())
             .onAppear {
                 activityViewModel.fetchActivities()

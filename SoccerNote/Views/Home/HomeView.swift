@@ -29,10 +29,11 @@ struct HomeView: View {
                             .foregroundColor(AppDesign.secondaryText)
                     }
                     .padding(.horizontal)
+                    .padding(.top)
                     
                     // カレンダー表示
                     CalendarView()
-                        .frame(height: 300)
+                        .frame(height: 350)
                         .padding(.horizontal)
                     
                     // 最近の記録
@@ -47,12 +48,14 @@ struct HomeView: View {
                                 message: "「追加」タブから新しい記録を追加しましょう",
                                 icon: "note.text"
                             )
+                            .padding(.top)
                         } else {
                             ForEach(activityViewModel.recentActivities, id: \.self) { activity in
                                 RecentActivityRow(activity: activity)
                             }
                         }
                     }
+                    .padding(.top)
                     
                     // 目標進捗
                     VStack(alignment: .leading) {
@@ -66,6 +69,7 @@ struct HomeView: View {
                                 message: "「目標」タブから新しい目標を設定しましょう",
                                 icon: "flag"
                             )
+                            .padding(.top)
                         } else {
                             ScrollView(.horizontal, showsIndicators: false) {
                                 HStack(spacing: 15) {
@@ -78,10 +82,12 @@ struct HomeView: View {
                             }
                         }
                     }
+                    .padding(.top)
                     
-                    Spacer()
+                    Spacer(minLength: 20)
                 }
             }
+            .background(Color(UIColor.systemBackground))
             .navigationBarHidden(true)
             .onAppear {
                 activityViewModel.fetchActivities()
