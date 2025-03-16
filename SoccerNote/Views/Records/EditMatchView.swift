@@ -31,7 +31,7 @@ struct EditMatchView: View {
         self._rating = State(initialValue: activity.value(forKey: "rating") as? Int ?? 3)
         
         // 試合詳細を取得して初期化
-        let matchDetails = EditMatchView.fetchMatchDetails(for: activity)
+        let matchDetails = Self.fetchMatchDetails(for: activity)
         
         self._opponent = State(initialValue: matchDetails?.value(forKey: "opponent") as? String ?? "")
         self._score = State(initialValue: matchDetails?.value(forKey: "score") as? String ?? "")
@@ -130,7 +130,7 @@ struct EditMatchView: View {
         activity.setValue(rating, forKey: "rating")
         
         // 試合詳細の更新
-        if let matchDetails = fetchMatchDetails(for: activity) {
+        if let matchDetails = Self.fetchMatchDetails(for: activity) {
             matchDetails.setValue(opponent, forKey: "opponent")
             matchDetails.setValue(score, forKey: "score")
             matchDetails.setValue(goalsScored, forKey: "goalsScored")
@@ -149,8 +149,8 @@ struct EditMatchView: View {
         }
     }
     
-    // 試合詳細の取得
-    private static func fetchMatchDetails(for activity: NSManagedObject) -> NSManagedObject? {
+    // 試合詳細の取得（静的メソッド）
+    static func fetchMatchDetails(for activity: NSManagedObject) -> NSManagedObject? {
         guard let id = activity.value(forKey: "id") as? UUID,
               let context = activity.managedObjectContext else { return nil }
         
@@ -165,10 +165,5 @@ struct EditMatchView: View {
             print("試合詳細の取得に失敗: \(error)")
             return nil
         }
-    }
-    
-    // インスタンスメソッドとして試合詳細を取得
-    private func fetchMatchDetails(for activity: NSManagedObject) -> NSManagedObject? {
-        return Self.fetchMatchDetails(for: activity)
     }
 }

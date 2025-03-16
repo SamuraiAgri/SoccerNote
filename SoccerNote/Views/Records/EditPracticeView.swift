@@ -29,7 +29,7 @@ struct EditPracticeView: View {
         self._rating = State(initialValue: activity.value(forKey: "rating") as? Int ?? 3)
         
         // 練習詳細を取得して初期化
-        let practiceDetails = EditPracticeView.fetchPracticeDetails(for: activity)
+        let practiceDetails = Self.fetchPracticeDetails(for: activity)
         
         self._focus = State(initialValue: practiceDetails?.value(forKey: "focus") as? String ?? "")
         self._duration = State(initialValue: practiceDetails?.value(forKey: "duration") as? Int ?? 60)
@@ -125,7 +125,7 @@ struct EditPracticeView: View {
         activity.setValue(rating, forKey: "rating")
         
         // 練習詳細の更新
-        if let practiceDetails = fetchPracticeDetails(for: activity) {
+        if let practiceDetails = Self.fetchPracticeDetails(for: activity) {
             practiceDetails.setValue(focus, forKey: "focus")
             practiceDetails.setValue(duration, forKey: "duration")
             practiceDetails.setValue(intensity, forKey: "intensity")
@@ -142,8 +142,8 @@ struct EditPracticeView: View {
         }
     }
     
-    // 練習詳細の取得
-    private static func fetchPracticeDetails(for activity: NSManagedObject) -> NSManagedObject? {
+    // 練習詳細の取得（静的メソッド）
+    static func fetchPracticeDetails(for activity: NSManagedObject) -> NSManagedObject? {
         guard let id = activity.value(forKey: "id") as? UUID,
               let context = activity.managedObjectContext else { return nil }
         
@@ -158,10 +158,5 @@ struct EditPracticeView: View {
             print("練習詳細の取得に失敗: \(error)")
             return nil
         }
-    }
-    
-    // インスタンスメソッドとして練習詳細を取得
-    private func fetchPracticeDetails(for activity: NSManagedObject) -> NSManagedObject? {
-        return Self.fetchPracticeDetails(for: activity)
     }
 }

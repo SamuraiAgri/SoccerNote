@@ -1,4 +1,3 @@
-// SoccerNote/ViewModels/GoalViewModel.swift
 import Foundation
 import CoreData
 import SwiftUI
@@ -28,7 +27,7 @@ class GoalViewModel: ObservableObject {
         let goal = NSEntityDescription.insertNewObject(forEntityName: "Goal", into: viewContext)
         
         goal.setValue(title, forKey: "title")
-        goal.setValue(description, forKey: "description")
+        goal.setValue(description, forKey: "goalDescription")  // goalDescription に変更
         goal.setValue(deadline, forKey: "deadline")
         goal.setValue(false, forKey: "isCompleted")
         goal.setValue(progress, forKey: "progress")

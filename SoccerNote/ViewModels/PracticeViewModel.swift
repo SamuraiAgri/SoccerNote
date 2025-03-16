@@ -1,4 +1,3 @@
-// SoccerNote/ViewModels/PracticeViewModel.swift
 import Foundation
 import CoreData
 import SwiftUI

@@ -28,6 +28,12 @@ struct PersistenceController {
         // サンプルデータの追加
         let viewContext = controller.container.viewContext
         
+        // Item エンティティのサンプル (ContentView.swift 用)
+        for _ in 0..<10 {
+            let newItem = Item(context: viewContext)
+            newItem.timestamp = Date()
+        }
+        
         // サンプルの活動記録
         let activity = NSEntityDescription.insertNewObject(forEntityName: "Activity", into: viewContext) as! NSManagedObject
         activity.setValue(Date(), forKey: "date")

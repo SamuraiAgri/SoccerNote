@@ -1,4 +1,3 @@
-// SoccerNote/ViewModels/MatchViewModel.swift
 import Foundation
 import CoreData
 import SwiftUI

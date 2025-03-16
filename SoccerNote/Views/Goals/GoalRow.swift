@@ -1,4 +1,3 @@
-// SoccerNote/Views/Goals/GoalRow.swift
 import SwiftUI
 import CoreData
 
@@ -54,11 +53,4 @@ struct GoalRow: View {
         formatter.locale = Locale(identifier: "ja_JP")
         return "期限: \(formatter.string(from: deadline))"
     }
-}
-
-#Preview {
-    let context = PersistenceController.preview.container.viewContext
-    let request = NSFetchRequest<NSManagedObject>(entityName: "Goal")
-    let goals = try! context.fetch(request)
-    return GoalRow(goal: goals.first!)
 }
