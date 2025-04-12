@@ -130,21 +130,6 @@ struct CalendarView: View {
     }
 }
 
-// カレンダー日付表示用
-struct CalendarDay: Hashable {
-    let date: Date
-    let isPlaceholder: Bool
-    
-    func hash(into hasher: inout Hasher) {
-        hasher.combine(date)
-        hasher.combine(isPlaceholder)
-    }
-    
-    static func == (lhs: CalendarDay, rhs: CalendarDay) -> Bool {
-        return lhs.date == rhs.date && lhs.isPlaceholder == rhs.isPlaceholder
-    }
-}
-
 // カレンダー日表示
 struct CalendarDayView: View {
     let date: Date

@@ -417,6 +417,35 @@ enum StatsPeriod: String, CaseIterable, Identifiable {
     
     var id: String { self.rawValue }
 }
+func getSeasonDateRange() -> (start: Date, end: Date) {
+    let calendar = Calendar.current
+    let currentDate = Date()
+    let year = calendar.component(.year, from: currentDate)
+    
+    // 例: 4月1日から翌年3月31日までをシーズンとする（学校年度に合わせた例）
+    var startComponents = DateComponents()
+    startComponents.year = year
+    startComponents.month = 4
+    startComponents.day = 1
+    
+    var endComponents = DateComponents()
+    endComponents.year = year + 1
+    endComponents.month = 3
+    endComponents.day = 31
+    
+    let startDate = calendar.date(from: startComponents) ?? currentDate
+    let endDate = calendar.date(from: endComponents) ?? currentDate
+    
+    // 現在の日付が次のシーズンなら、1年前のシーズンを返す
+    if currentDate < startDate {
+        return (
+            calendar.date(byAdding: .year, value: -1, to: startDate) ?? currentDate,
+            calendar.date(byAdding: .year, value: -1, to: endDate) ?? currentDate
+        )
+    }
+    
+    return (startDate, endDate)
+}
 
 // プレビュー
 #Preview {

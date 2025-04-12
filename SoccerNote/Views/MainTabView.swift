@@ -3,16 +3,15 @@ import SwiftUI
 
 struct MainTabView: View {
     @Environment(\.managedObjectContext) private var viewContext
+    @StateObject private var addSheetController = AddSheetController()
     @State private var selectedTab: Int = 0
-    
-    // 記録追加シートの表示状態
-    @State private var showingAddSheet = false
     
     var body: some View {
         TabView(selection: $selectedTab) {
             // 記録タブ（メインのホーム画面として機能）
             RecordsHomeView()
                 .environment(\.managedObjectContext, viewContext)
+                .environmentObject(addSheetController)
                 .tabItem {
                     Label("記録", systemImage: "calendar")
                 }
@@ -35,12 +34,10 @@ struct MainTabView: View {
                 .tag(2)
         }
         .accentColor(AppDesign.primaryColor)
-        .sheet(isPresented: $showingAddSheet) {
+        .sheet(isPresented: $addSheetController.isShowingAddSheet) {
             AddRecordView()
                 .environment(\.managedObjectContext, viewContext)
         }
-        // 全体にEnvironmentValueとして記録追加シートの表示状態を渡す
-        .environmentObject(AddSheetController())
     }
 }
 
