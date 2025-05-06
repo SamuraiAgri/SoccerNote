@@ -1,3 +1,4 @@
+// SoccerNote/Views/Records/ActivityDetailView.swift
 import SwiftUI
 import CoreData
 
@@ -219,12 +220,9 @@ struct ActivityDetailView: View {
         
         let backgroundContext = PersistenceController.shared.newBackgroundContext()
         
-        guard let activityID = activity.objectID else {
-            isLoading = false
-            errorMessage = "活動データが不正です"
-            showingErrorBanner = true
-            return
-        }
+        // エラー箇所：objectIDがオプショナルでないのに条件分岐で使用している
+        // 修正: objectIDを直接使用し、ガード文は削除
+        let activityID = activity.objectID
         
         backgroundContext.perform {
             do {

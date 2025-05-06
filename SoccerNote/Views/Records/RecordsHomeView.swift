@@ -1,3 +1,4 @@
+// SoccerNote/Views/Records/RecordsHomeView.swift
 import SwiftUI
 import CoreData
 
@@ -22,8 +23,9 @@ struct RecordsHomeView: View {
         NavigationView {
             ZStack {
                 VStack(spacing: 0) {
-                    // シンプル化したカレンダー
-                    CompactCalendarView(selectedDate: $selectedDate)
+                    // カレンダービュー - 引数エラーを修正
+                    CalendarView()
+                        .frame(height: 350)
                         .padding(.top)
                         .padding(.horizontal)
                     
@@ -119,7 +121,7 @@ struct RecordsHomeView: View {
                         List {
                             ForEach(activitiesForSelectedDate, id: \.self) { activity in
                                 NavigationLink(destination: ActivityDetailView(activity: activity)) {
-                                    SimplifiedActivityRow(activity: activity)
+                                    ActivityRow(activity: activity)
                                 }
                             }
                             .onDelete(perform: deleteActivity)
@@ -160,7 +162,7 @@ struct RecordsHomeView: View {
                 AddRecordView(preselectedDate: selectedDate)
                     .environment(\.managedObjectContext, viewContext)
             }
-            .onChange(of: activityViewModel.errorMessage) { newValue in
+            .onChange(of: activityViewModel.errorMessage) { _, newValue in
                 showingErrorBanner = newValue != nil
             }
         }
