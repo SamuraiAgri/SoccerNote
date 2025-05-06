@@ -1,70 +1,198 @@
 import Foundation
 import CoreData
 import SwiftUI
+import Combine
 
 class GoalViewModel: ObservableObject {
+    private let persistenceController: PersistenceController
     private let viewContext: NSManagedObjectContext
+    private var cancellables = Set<AnyCancellable>()
     
     @Published var goals: [NSManagedObject] = []
+    @Published var errorMessage: String? = nil
+    @Published var isLoading: Bool = false
     
-    init(viewContext: NSManagedObjectContext) {
+    init(viewContext: NSManagedObjectContext, persistenceController: PersistenceController = .shared) {
+        self.persistenceController = persistenceController
         self.viewContext = viewContext
         fetchGoals()
+        
+        // 変更通知を監視して自動更新
+        NotificationCenter.default.publisher(for: .NSManagedObjectContextDidSave)
+            .sink { [weak self] _ in
+                DispatchQueue.main.async {
+                    self?.fetchGoals()
+                }
+            }
+            .store(in: &cancellables)
     }
     
     func fetchGoals() {
-        let request = NSFetchRequest<NSManagedObject>(entityName: "Goal")
-        request.sortDescriptors = [NSSortDescriptor(key: "deadline", ascending: true)]
+        isLoading = true
+        errorMessage = nil
         
-        do {
-            goals = try viewContext.fetch(request)
-        } catch {
-            print("目標の取得に失敗: \(error)")
+        let backgroundContext = persistenceController.newBackgroundContext()
+        
+        backgroundContext.perform {
+            let request = NSFetchRequest<NSManagedObject>(entityName: "Goal")
+            request.sortDescriptors = [NSSortDescriptor(key: "deadline", ascending: true)]
+            request.fetchBatchSize = 20
+            
+            do {
+                let fetchedGoals = try backgroundContext.fetch(request)
+                let goalIDs = fetchedGoals.map { $0.objectID }
+                
+                DispatchQueue.main.async {
+                    self.goals = goalIDs.map { self.viewContext.object(with: $0) }
+                    self.isLoading = false
+                }
+            } catch {
+                DispatchQueue.main.async {
+                    self.errorMessage = "目標データの取得に失敗しました"
+                    self.isLoading = false
+                }
+                print("目標の取得に失敗: \(error)")
+            }
         }
     }
     
     func saveGoal(title: String, description: String, deadline: Date, progress: Int = 0) {
-        let goal = NSEntityDescription.insertNewObject(forEntityName: "Goal", into: viewContext)
+        isLoading = true
+        errorMessage = nil
         
-        goal.setValue(title, forKey: "title")
-        goal.setValue(description, forKey: "goalDescription")  // goalDescription に変更
-        goal.setValue(deadline, forKey: "deadline")
-        goal.setValue(false, forKey: "isCompleted")
-        goal.setValue(progress, forKey: "progress")
-        goal.setValue(Date(), forKey: "creationDate")
-        goal.setValue(UUID(), forKey: "id")
+        // 入力検証
+        let trimmedTitle = title.trimmingCharacters(in: .whitespacesAndNewlines)
         
-        do {
-            try viewContext.save()
-            fetchGoals()
-        } catch {
-            let nsError = error as NSError
-            print("目標の保存に失敗: \(nsError)")
+        guard !trimmedTitle.isEmpty else {
+            DispatchQueue.main.async {
+                self.errorMessage = "タイトルは必須項目です"
+                self.isLoading = false
+            }
+            return
+        }
+        
+        let backgroundContext = persistenceController.newBackgroundContext()
+        
+        backgroundContext.perform {
+            let goal = NSEntityDescription.insertNewObject(forEntityName: "Goal", into: backgroundContext)
+            
+            goal.setValue(trimmedTitle, forKey: "title")
+            goal.setValue(description, forKey: "goalDescription")
+            goal.setValue(deadline, forKey: "deadline")
+            goal.setValue(false, forKey: "isCompleted")
+            goal.setValue(max(0, min(100, progress)), forKey: "progress") // 0-100の範囲に制限
+            goal.setValue(Date(), forKey: "creationDate")
+            goal.setValue(UUID(), forKey: "id")
+            
+            do {
+                try backgroundContext.save()
+                
+                DispatchQueue.main.async {
+                    self.fetchGoals()
+                    self.isLoading = false
+                }
+            } catch {
+                DispatchQueue.main.async {
+                    self.errorMessage = "目標の保存に失敗しました: \(error.localizedDescription)"
+                    self.isLoading = false
+                }
+                print("目標の保存に失敗: \(error)")
+            }
         }
     }
     
     func updateGoalProgress(_ goal: NSManagedObject, progress: Int, isCompleted: Bool = false) {
-        goal.setValue(progress, forKey: "progress")
-        goal.setValue(isCompleted, forKey: "isCompleted")
+        isLoading = true
+        errorMessage = nil
         
-        do {
-            try viewContext.save()
-            fetchGoals()
-        } catch {
-            let nsError = error as NSError
-            print("目標の更新に失敗: \(nsError)")
+        let backgroundContext = persistenceController.newBackgroundContext()
+        
+        guard let goalID = goal.objectID else {
+            DispatchQueue.main.async {
+                self.errorMessage = "目標データが不正です"
+                self.isLoading = false
+            }
+            return
+        }
+        
+        backgroundContext.perform {
+            do {
+                let goalToUpdate = try backgroundContext.existingObject(with: goalID)
+                
+                goalToUpdate.setValue(max(0, min(100, progress)), forKey: "progress") // 0-100の範囲に制限
+                goalToUpdate.setValue(isCompleted, forKey: "isCompleted")
+                
+                try backgroundContext.save()
+                
+                DispatchQueue.main.async {
+                    self.fetchGoals()
+                    self.isLoading = false
+                }
+            } catch {
+                DispatchQueue.main.async {
+                    self.errorMessage = "目標の更新に失敗しました: \(error.localizedDescription)"
+                    self.isLoading = false
+                }
+                print("目標の更新に失敗: \(error)")
+            }
         }
     }
     
     func deleteGoal(_ goal: NSManagedObject) {
-        viewContext.delete(goal)
+        isLoading = true
+        errorMessage = nil
         
-        do {
-            try viewContext.save()
-            fetchGoals()
-        } catch {
-            let nsError = error as NSError
-            print("目標の削除に失敗: \(nsError)")
+        let backgroundContext = persistenceController.newBackgroundContext()
+        
+        guard let goalID = goal.objectID else {
+            DispatchQueue.main.async {
+                self.errorMessage = "目標データが不正です"
+                self.isLoading = false
+            }
+            return
+        }
+        
+        backgroundContext.perform {
+            do {
+                let goalToDelete = try backgroundContext.existingObject(with: goalID)
+                backgroundContext.delete(goalToDelete)
+                
+                try backgroundContext.save()
+                
+                DispatchQueue.main.async {
+                    self.fetchGoals()
+                    self.isLoading = false
+                }
+            } catch {
+                DispatchQueue.main.async {
+                    self.errorMessage = "目標の削除に失敗しました: \(error.localizedDescription)"
+                    self.isLoading = false
+                }
+                print("目標の削除に失敗: \(error)")
+            }
+        }
+    }
+    func deleteActivity(_ activity: NSManagedObject) {
+        let backgroundContext = persistenceController.newBackgroundContext()
+        
+        // objectIDの非オプショナル性を考慮
+        let activityID = activity.objectID
+        
+        backgroundContext.perform {
+            do {
+                let activityToDelete = try backgroundContext.existingObject(with: activityID)
+                backgroundContext.delete(activityToDelete)
+                
+                try backgroundContext.save()
+                DispatchQueue.main.async {
+                    self.fetchActivities()
+                }
+            } catch {
+                DispatchQueue.main.async {
+                    self.errorMessage = "活動の削除に失敗しました: \(error.localizedDescription)"
+                }
+                print("活動の削除に失敗: \(error)")
+            }
         }
     }
 }

@@ -1,4 +1,3 @@
-// SoccerNote/Views/AddRecord/AddRecordView.swift
 import SwiftUI
 import CoreData
 
@@ -32,6 +31,9 @@ struct AddRecordView: View {
     
     // 保存確認
     @State private var showingConfirmation = false
+    @State private var showingAlert = false
+    @State private var alertMessage = ""
+    @State private var isLoading = false
     
     // ViewModel
     private let activityViewModel: ActivityViewModel
@@ -53,97 +55,150 @@ struct AddRecordView: View {
     
     var body: some View {
         NavigationView {
-            VStack {
-                // ステッププログレスバー
-                StepProgressBar(currentStep: currentStep, totalSteps: 3)
-                    .padding(.vertical)
-                
-                // ステップごとの画面
-                switch currentStep {
-                case 0:
-                    // ステップ1: 記録タイプ選択
-                    TypeSelectionView(selectedType: $selectedType)
-                case 1:
-                    // ステップ2: 基本情報入力
-                    BasicInfoView(date: $date, location: $location, notes: $notes, rating: $rating)
-                case 2:
-                    // ステップ3: 詳細情報入力（タイプに応じて変化）
-                    if selectedType == .match {
-                        MatchDetailsView(
-                            opponent: $opponent,
-                            score: $score,
-                            goalsScored: $goalsScored,
-                            assists: $assists
-                        )
-                    } else {
-                        PracticeDetailsView(
-                            focus: $focus,
-                            duration: $duration,
-                            intensity: $intensity
-                        )
-                    }
-                default:
-                    EmptyView()
-                }
-                
-                Spacer()
-                
-                // ナビゲーションボタン
-                HStack {
-                    // 戻るボタン
-                    if currentStep > 0 {
-                        Button(action: {
-                            withAnimation {
-                                currentStep -= 1
+            ZStack {
+                VStack {
+                    // ステッププログレスバー
+                    StepProgressBar(currentStep: currentStep, totalSteps: 3)
+                        .padding(.vertical)
+                    
+                    // ステップごとの画面
+                    switch currentStep {
+                    case 0:
+                        // ステップ1: 記録タイプ選択
+                        TypeSelectionView(selectedType: $selectedType)
+                    case 1:
+                        // ステップ2: 基本情報入力
+                        BasicInfoView(date: $date, location: $location, notes: $notes, rating: $rating)
+                            .onTapGesture {
+                                // キーボードを閉じる
+                                UIApplication.shared.sendAction(#selector(UIResponder.resignFirstResponder), to: nil, from: nil, for: nil)
                             }
-                        }) {
-                            HStack {
-                                Image(systemName: "chevron.left")
-                                Text("戻る")
+                    case 2:
+                        // ステップ3: 詳細情報入力（タイプに応じて変化）
+                        if selectedType == .match {
+                            MatchDetailsView(
+                                opponent: $opponent,
+                                score: $score,
+                                goalsScored: $goalsScored,
+                                assists: $assists
+                            )
+                            .onTapGesture {
+                                // キーボードを閉じる
+                                UIApplication.shared.sendAction(#selector(UIResponder.resignFirstResponder), to: nil, from: nil, for: nil)
                             }
-                            .padding()
-                            .foregroundColor(AppDesign.primaryColor)
+                        } else {
+                            PracticeDetailsView(
+                                focus: $focus,
+                                duration: $duration,
+                                intensity: $intensity
+                            )
+                            .onTapGesture {
+                                // キーボードを閉じる
+                                UIApplication.shared.sendAction(#selector(UIResponder.resignFirstResponder), to: nil, from: nil, for: nil)
+                            }
                         }
+                    default:
+                        EmptyView()
                     }
                     
                     Spacer()
                     
-                    // 次へ/保存ボタン
-                    Button(action: {
-                        if currentStep < 2 {
-                            withAnimation {
-                                currentStep += 1
+                    // ナビゲーションボタン
+                    HStack {
+                        // 戻るボタン
+                        if currentStep > 0 {
+                            Button(action: {
+                                withAnimation {
+                                    currentStep -= 1
+                                }
+                            }) {
+                                HStack {
+                                    Image(systemName: "chevron.left")
+                                    Text("戻る")
+                                }
+                                .padding()
+                                .foregroundColor(AppDesign.primaryColor)
                             }
-                        } else {
-                            saveRecord()
+                            .disabled(isLoading)
                         }
-                    }) {
-                        HStack {
-                            Text(currentStep < 2 ? "次へ" : "保存")
-                            Image(systemName: currentStep < 2 ? "chevron.right" : "checkmark")
+                        
+                        Spacer()
+                        
+                        // 次へ/保存ボタン
+                        Button(action: {
+                            if currentStep < 2 {
+                                withAnimation {
+                                    validateCurrentStep()
+                                }
+                            } else {
+                                saveRecord()
+                            }
+                        }) {
+                            HStack {
+                                Text(currentStep < 2 ? "次へ" : "保存")
+                                Image(systemName: currentStep < 2 ? "chevron.right" : "checkmark")
+                            }
+                            .padding()
+                            .foregroundColor(.white)
+                            .background(isStepValid ? AppDesign.primaryColor : Color.gray)
+                            .cornerRadius(10)
                         }
-                        .padding()
-                        .foregroundColor(.white)
-                        .background(isStepValid ? AppDesign.primaryColor : Color.gray)
-                        .cornerRadius(10)
+                        .disabled(!isStepValid || isLoading)
                     }
-                    .disabled(!isStepValid)
+                    .padding()
                 }
-                .padding()
-            }
-            .navigationTitle(stepTitle)
-            .navigationBarTitleDisplayMode(.inline)
-            .navigationBarItems(trailing: Button("キャンセル") {
-                presentationMode.wrappedValue.dismiss()
-            })
-            .alert(isPresented: $showingConfirmation) {
-                Alert(
-                    title: Text("保存完了"),
-                    message: Text("記録が保存されました"),
-                    dismissButton: .default(Text("OK")) {
-                        presentationMode.wrappedValue.dismiss()
+                .navigationTitle(stepTitle)
+                .navigationBarTitleDisplayMode(.inline)
+                .navigationBarItems(trailing: Button("キャンセル") {
+                    presentationMode.wrappedValue.dismiss()
+                })
+                .alert(isPresented: $showingAlert) {
+                    Alert(
+                        title: Text("入力エラー"),
+                        message: Text(alertMessage),
+                        dismissButton: .default(Text("OK"))
+                    )
+                }
+                .sheet(isPresented: $showingConfirmation) {
+                    VStack(spacing: 20) {
+                        Image(systemName: "checkmark.circle.fill")
+                            .font(.system(size: 60))
+                            .foregroundColor(.green)
+                        
+                        Text("保存完了")
+                            .font(.title)
+                            .fontWeight(.bold)
+                        
+                        Text("記録が保存されました")
+                            .foregroundColor(.secondary)
+                        
+                        Button(action: {
+                            showingConfirmation = false
+                            presentationMode.wrappedValue.dismiss()
+                        }) {
+                            Text("OK")
+                                .frame(maxWidth: .infinity)
+                                .padding()
+                                .background(AppDesign.primaryColor)
+                                .foregroundColor(.white)
+                                .cornerRadius(10)
+                        }
+                        .padding(.top, 20)
                     }
-                )
+                    .padding()
+                    .frame(width: 300, height: 250)
+                    .background(Color(.systemBackground))
+                    .cornerRadius(20)
+                    .shadow(radius: 10)
+                }
+                
+                // ローディングオーバーレイ
+                if isLoading {
+                    Color.black.opacity(0.3)
+                        .edgesIgnoringSafeArea(.all)
+                    
+                    LoadingView()
+                }
             }
         }
     }
@@ -168,20 +223,52 @@ struct AddRecordView: View {
         case 0:
             return true  // タイプ選択は常に有効
         case 1:
-            return !location.isEmpty  // 場所は必須
+            // 入力検証の強化（空白スペースだけの入力も無効に）
+            return ValidationRules.validateLocationInput(location)
         case 2:
             if selectedType == .match {
-                return !opponent.isEmpty && !score.isEmpty
+                return ValidationRules.validateOpponentInput(opponent) &&
+                       ValidationRules.validateScoreInput(score)
             } else {
-                return !focus.isEmpty
+                return ValidationRules.validateFocusInput(focus)
             }
         default:
             return false
         }
     }
     
+    // 現在のステップの検証
+    private func validateCurrentStep() {
+        switch currentStep {
+        case 0:
+            // タイプ選択は常に有効なので次のステップへ
+            currentStep += 1
+        case 1:
+            if ValidationRules.validateLocationInput(location) {
+                currentStep += 1
+            } else {
+                alertMessage = "場所は必須項目です。"
+                showingAlert = true
+            }
+        case 2:
+            // 最後のステップの検証は保存時に行う
+            break
+        default:
+            break
+        }
+    }
+    
     // 記録保存
     private func saveRecord() {
+        // 入力検証（再チェック）
+        guard isStepValid else {
+            alertMessage = "必須項目を入力してください。"
+            showingAlert = true
+            return
+        }
+        
+        isLoading = true
+        
         // 活動記録の保存
         guard let activity = activityViewModel.saveActivity(
             type: selectedType,
@@ -190,12 +277,17 @@ struct AddRecordView: View {
             notes: notes,
             rating: rating
         ) else {
+            isLoading = false
+            if let errorMessage = activityViewModel.errorMessage {
+                alertMessage = errorMessage
+                showingAlert = true
+            }
             return
         }
         
         // 詳細情報の保存
         if selectedType == .match {
-            // 試合詳細の保存（シンプル化）
+            // 試合詳細の保存
             matchViewModel.saveMatch(
                 activity: activity,
                 opponent: opponent,
@@ -206,8 +298,15 @@ struct AddRecordView: View {
                 performance: 5,  // デフォルト値
                 photos: nil
             )
+            
+            if let errorMessage = matchViewModel.errorMessage {
+                isLoading = false
+                alertMessage = errorMessage
+                showingAlert = true
+                return
+            }
         } else {
-            // 練習詳細の保存（シンプル化）
+            // 練習詳細の保存
             practiceViewModel.savePractice(
                 activity: activity,
                 focus: focus,
@@ -215,9 +314,17 @@ struct AddRecordView: View {
                 intensity: intensity,
                 learnings: ""  // デフォルト値
             )
+            
+            if let errorMessage = practiceViewModel.errorMessage {
+                isLoading = false
+                alertMessage = errorMessage
+                showingAlert = true
+                return
+            }
         }
         
-        // 保存確認アラート
+        isLoading = false
+        // 保存確認シート
         showingConfirmation = true
     }
 }
@@ -331,15 +438,7 @@ struct BasicInfoView: View {
         ScrollView {
             VStack(alignment: .leading, spacing: 20) {
                 // 日付選択
-                VStack(alignment: .leading) {
-                    Text("日付")
-                        .font(.headline)
-                    
-                    DatePicker("", selection: $date, displayedComponents: .date)
-                        .datePickerStyle(CompactDatePickerStyle())
-                        .labelsHidden()
-                        .padding(.vertical, 8)
-                }
+                DatePickerField(date: $date, label: "日付")
                 
                 // 場所入力
                 VStack(alignment: .leading) {
@@ -350,6 +449,12 @@ struct BasicInfoView: View {
                         .padding()
                         .background(Color.gray.opacity(0.1))
                         .cornerRadius(8)
+                        .onChange(of: location) { newValue in
+                            // 入力文字数制限
+                            if newValue.count > ValidationRules.maxLocationLength {
+                                location = String(newValue.prefix(ValidationRules.maxLocationLength))
+                            }
+                        }
                 }
                 
                 // メモ入力
@@ -361,6 +466,12 @@ struct BasicInfoView: View {
                         TextEditor(text: $notes)
                             .padding(4)
                             .frame(height: 100)
+                            .onChange(of: notes) { newValue in
+                                // 入力文字数制限
+                                if newValue.count > ValidationRules.maxNotesLength {
+                                    notes = String(newValue.prefix(ValidationRules.maxNotesLength))
+                                }
+                            }
                         
                         if notes.isEmpty {
                             Text("メモを入力")
@@ -415,6 +526,12 @@ struct MatchDetailsView: View {
                         .padding()
                         .background(Color.gray.opacity(0.1))
                         .cornerRadius(8)
+                        .onChange(of: opponent) { newValue in
+                            // 入力文字数制限
+                            if newValue.count > ValidationRules.maxOpponentLength {
+                                opponent = String(newValue.prefix(ValidationRules.maxOpponentLength))
+                            }
+                        }
                 }
                 
                 // スコア
@@ -426,6 +543,12 @@ struct MatchDetailsView: View {
                         .padding()
                         .background(Color.gray.opacity(0.1))
                         .cornerRadius(8)
+                        .onChange(of: score) { newValue in
+                            // 入力文字数制限
+                            if newValue.count > ValidationRules.maxScoreLength {
+                                score = String(newValue.prefix(ValidationRules.maxScoreLength))
+                            }
+                        }
                 }
                 
                 // 得点
@@ -450,7 +573,9 @@ struct MatchDetailsView: View {
                             .multilineTextAlignment(.center)
                         
                         Button(action: {
-                            goalsScored += 1
+                            if goalsScored < ValidationRules.goalsRange.upperBound {
+                                goalsScored += 1
+                            }
                         }) {
                             Image(systemName: "plus.circle.fill")
                                 .font(.system(size: 24))
@@ -484,7 +609,9 @@ struct MatchDetailsView: View {
                             .multilineTextAlignment(.center)
                         
                         Button(action: {
-                            assists += 1
+                            if assists < ValidationRules.assistsRange.upperBound {
+                                assists += 1
+                            }
                         }) {
                             Image(systemName: "plus.circle.fill")
                                 .font(.system(size: 24))
@@ -519,74 +646,75 @@ struct PracticeDetailsView: View {
                         .padding()
                         .background(Color.gray.opacity(0.1))
                         .cornerRadius(8)
-                }
-                
-                // 練習時間
-                VStack(alignment: .leading) {
-                    Text("練習時間")
-                        .font(.headline)
-                    
-                    HStack {
-                        Slider(value: Binding(
-                            get: { Double(duration) },
-                            set: { duration = Int($0) }
-                        ), in: 15...180, step: 15)
-                        .accentColor(AppDesign.primaryColor)
-                        
-                        Text("\(duration)分")
-                            .frame(width: 60)
-                    }
-                    .padding()
-                    .background(Color.gray.opacity(0.1))
-                    .cornerRadius(8)
-                }
-                
-                // 練習強度
-                VStack(alignment: .leading) {
-                    Text("練習強度")
-                        .font(.headline)
-                    
-                    VStack {
-                        HStack {
-                            ForEach(1...5, id: \.self) { index in
-                                Circle()
-                                    .fill(index <= intensity ? AppDesign.primaryColor : Color.gray.opacity(0.3))
-                                    .frame(width: 30, height: 30)
-                                    .onTapGesture {
-                                        intensity = index
+                                .onChange(of: focus) { newValue in
+                                                            // 入力文字数制限
+                                                            if newValue.count > ValidationRules.maxFocusLength {
+                                                                focus = String(newValue.prefix(ValidationRules.maxFocusLength))
+                                                            }
+                                                        }
+                                                }
+                                                
+                                                // 練習時間
+                                                VStack(alignment: .leading) {
+                                                    Text("練習時間")
+                                                        .font(.headline)
+                                                    
+                                                    HStack {
+                                                        Slider(value: Binding(
+                                                            get: { Double(duration) },
+                                                            set: { duration = Int($0) }
+                                                        ), in: Double(ValidationRules.durationRange.lowerBound)...Double(ValidationRules.durationRange.upperBound), step: 15)
+                                                        .accentColor(AppDesign.primaryColor)
+                                                        
+                                                        Text("\(duration)分")
+                                                            .frame(width: 60)
+                                                    }
+                                                    .padding()
+                                                    .background(Color.gray.opacity(0.1))
+                                                    .cornerRadius(8)
+                                                }
+                                                
+                                                // 練習強度
+                                                VStack(alignment: .leading) {
+                                                    Text("練習強度")
+                                                        .font(.headline)
+                                                    
+                                                    VStack {
+                                                        HStack {
+                                                            ForEach(1...5, id: \.self) { index in
+                                                                Circle()
+                                                                    .fill(index <= intensity ? AppDesign.primaryColor : Color.gray.opacity(0.3))
+                                                                    .frame(width: 30, height: 30)
+                                                                    .onTapGesture {
+                                                                        intensity = index
+                                                                    }
+                                                            }
+                                                        }
+                                                        
+                                                        HStack {
+                                                            Text("軽い")
+                                                                .font(.caption)
+                                                                .foregroundColor(.secondary)
+                                                                
+                                                            Spacer()
+                                                                
+                                                            Text("普通")
+                                                                .font(.caption)
+                                                                .foregroundColor(.secondary)
+                                                                
+                                                            Spacer()
+                                                                
+                                                            Text("ハード")
+                                                                .font(.caption)
+                                                                .foregroundColor(.secondary)
+                                                        }
+                                                    }
+                                                    .padding()
+                                                    .background(Color.gray.opacity(0.1))
+                                                    .cornerRadius(8)
+                                                }
+                                            }
+                                            .padding()
+                                        }
                                     }
-                            }
-                        }
-                        
-                        HStack {
-                            Text("軽い")
-                                .font(.caption)
-                                .foregroundColor(.secondary)
-                            HStack {
-                                Text("軽い")
-                                    .font(.caption)
-                                    .foregroundColor(.secondary)
-                                
-                                Spacer()
-                                
-                                Text("普通")
-                                    .font(.caption)
-                                    .foregroundColor(.secondary)
-                                
-                                Spacer()
-                                
-                                Text("ハード")
-                                    .font(.caption)
-                                    .foregroundColor(.secondary)
-                            }
-                        }
-                        .padding()
-                        .background(Color.gray.opacity(0.1))
-                        .cornerRadius(8)
-                    }
-                }
-                .padding()
-            }
-        }
-    }
-}
+                                }

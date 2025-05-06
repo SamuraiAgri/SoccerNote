@@ -1,60 +1,156 @@
 import Foundation
 import CoreData
 import SwiftUI
+import Combine
 
 class MatchViewModel: ObservableObject {
+    private let persistenceController: PersistenceController
     private let viewContext: NSManagedObjectContext
+    private var cancellables = Set<AnyCancellable>()
     
     @Published var matches: [NSManagedObject] = []
+    @Published var errorMessage: String? = nil
+    @Published var isLoading: Bool = false
     
-    init(viewContext: NSManagedObjectContext) {
+    init(viewContext: NSManagedObjectContext, persistenceController: PersistenceController = .shared) {
+        self.persistenceController = persistenceController
         self.viewContext = viewContext
         fetchMatches()
+        
+        // 変更通知を監視して自動更新
+        NotificationCenter.default.publisher(for: .NSManagedObjectContextDidSave)
+            .sink { [weak self] _ in
+                DispatchQueue.main.async {
+                    self?.fetchMatches()
+                }
+            }
+            .store(in: &cancellables)
     }
     
     func fetchMatches() {
-        let request = NSFetchRequest<NSManagedObject>(entityName: "Match")
-        let activitySort = NSSortDescriptor(key: "activity.date", ascending: false)
-        request.sortDescriptors = [activitySort]
+        isLoading = true
+        errorMessage = nil
         
-        do {
-            matches = try viewContext.fetch(request)
-        } catch {
-            print("試合の取得に失敗: \(error)")
+        // バックグラウンドコンテキストを使用
+        let backgroundContext = persistenceController.newBackgroundContext()
+        
+        // バッチサイズを設定してメモリ使用量を削減
+        backgroundContext.perform {
+            let request = NSFetchRequest<NSManagedObject>(entityName: "Match")
+            let activitySort = NSSortDescriptor(key: "activity.date", ascending: false)
+            request.sortDescriptors = [activitySort]
+            request.fetchBatchSize = 20 // 一度に20件ずつロード
+            
+            do {
+                let fetchedMatches = try backgroundContext.fetch(request)
+                // オブジェクトIDを使ってメインコンテキストに変換
+                let matchIDs = fetchedMatches.map { $0.objectID }
+                
+                DispatchQueue.main.async {
+                    self.matches = matchIDs.map { self.viewContext.object(with: $0) }
+                    self.isLoading = false
+                }
+            } catch {
+                DispatchQueue.main.async {
+                    self.errorMessage = "試合データの取得に失敗しました"
+                    self.isLoading = false
+                    print("試合の取得に失敗: \(error)")
+                }
+            }
         }
     }
     
     func saveMatch(activity: NSManagedObject, opponent: String, score: String, goalsScored: Int, assists: Int, playingTime: Int, performance: Int, photos: Data? = nil) {
-        let match = NSEntityDescription.insertNewObject(forEntityName: "Match", into: viewContext)
+        isLoading = true
+        errorMessage = nil
         
-        match.setValue(opponent, forKey: "opponent")
-        match.setValue(score, forKey: "score")
-        match.setValue(goalsScored, forKey: "goalsScored")
-        match.setValue(assists, forKey: "assists")
-        match.setValue(playingTime, forKey: "playingTime")
-        match.setValue(performance, forKey: "performance")
-        match.setValue(photos, forKey: "photos")
-        match.setValue(UUID(), forKey: "id")
-        match.setValue(activity, forKey: "activity")
+        // 入力検証
+        let trimmedOpponent = opponent.trimmingCharacters(in: .whitespacesAndNewlines)
+        let trimmedScore = score.trimmingCharacters(in: .whitespacesAndNewlines)
         
-        do {
-            try viewContext.save()
-            fetchMatches()
-        } catch {
-            let nsError = error as NSError
-            print("試合の保存に失敗: \(nsError)")
+        guard !trimmedOpponent.isEmpty, !trimmedScore.isEmpty else {
+            DispatchQueue.main.async {
+                self.errorMessage = "対戦相手とスコアは必須項目です"
+                self.isLoading = false
+            }
+            return
+        }
+        
+        let backgroundContext = persistenceController.newBackgroundContext()
+        
+        guard let activityID = activity.objectID else {
+            DispatchQueue.main.async {
+                self.errorMessage = "活動データが不正です"
+                self.isLoading = false
+            }
+            return
+        }
+        
+        backgroundContext.perform {
+            do {
+                // 活動オブジェクトをバックグラウンドコンテキストで取得
+                let backgroundActivity = try backgroundContext.existingObject(with: activityID)
+                
+                let match = NSEntityDescription.insertNewObject(forEntityName: "Match", into: backgroundContext)
+                
+                match.setValue(trimmedOpponent, forKey: "opponent")
+                match.setValue(trimmedScore, forKey: "score")
+                match.setValue(max(0, min(20, goalsScored)), forKey: "goalsScored") // 0-20の範囲に制限
+                match.setValue(max(0, min(20, assists)), forKey: "assists") // 0-20の範囲に制限
+                match.setValue(max(0, min(120, playingTime)), forKey: "playingTime") // 0-120の範囲に制限
+                match.setValue(max(1, min(10, performance)), forKey: "performance") // 1-10の範囲に制限
+                match.setValue(photos, forKey: "photos")
+                match.setValue(UUID(), forKey: "id")
+                match.setValue(backgroundActivity, forKey: "activity")
+                
+                try backgroundContext.save()
+                
+                DispatchQueue.main.async {
+                    self.fetchMatches()
+                    self.isLoading = false
+                }
+            } catch {
+                DispatchQueue.main.async {
+                    self.errorMessage = "試合の保存に失敗しました: \(error.localizedDescription)"
+                    self.isLoading = false
+                }
+                print("試合の保存に失敗: \(error)")
+            }
         }
     }
     
     func deleteMatch(_ match: NSManagedObject) {
-        viewContext.delete(match)
+        isLoading = true
+        errorMessage = nil
         
-        do {
-            try viewContext.save()
-            fetchMatches()
-        } catch {
-            let nsError = error as NSError
-            print("試合の削除に失敗: \(nsError)")
+        let backgroundContext = persistenceController.newBackgroundContext()
+        
+        guard let matchID = match.objectID else {
+            DispatchQueue.main.async {
+                self.errorMessage = "試合データが不正です"
+                self.isLoading = false
+            }
+            return
+        }
+        
+        backgroundContext.perform {
+            do {
+                let matchToDelete = try backgroundContext.existingObject(with: matchID)
+                backgroundContext.delete(matchToDelete)
+                
+                try backgroundContext.save()
+                
+                DispatchQueue.main.async {
+                    self.fetchMatches()
+                    self.isLoading = false
+                }
+            } catch {
+                DispatchQueue.main.async {
+                    self.errorMessage = "試合の削除に失敗しました: \(error.localizedDescription)"
+                    self.isLoading = false
+                }
+                print("試合の削除に失敗: \(error)")
+            }
         }
     }
     
@@ -73,5 +169,28 @@ class MatchViewModel: ObservableObject {
         let averagePerformance = matches.isEmpty ? 0.0 : Double(totalPerformance) / Double(matches.count)
         
         return (totalGoals, totalAssists, averagePerformance)
+    }
+    func deleteActivity(_ activity: NSManagedObject) {
+        let backgroundContext = persistenceController.newBackgroundContext()
+        
+        // objectIDの非オプショナル性を考慮
+        let activityID = activity.objectID
+        
+        backgroundContext.perform {
+            do {
+                let activityToDelete = try backgroundContext.existingObject(with: activityID)
+                backgroundContext.delete(activityToDelete)
+                
+                try backgroundContext.save()
+                DispatchQueue.main.async {
+                    self.fetchActivities()
+                }
+            } catch {
+                DispatchQueue.main.async {
+                    self.errorMessage = "活動の削除に失敗しました: \(error.localizedDescription)"
+                }
+                print("活動の削除に失敗: \(error)")
+            }
+        }
     }
 }

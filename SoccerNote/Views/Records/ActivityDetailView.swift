@@ -5,102 +5,159 @@ struct ActivityDetailView: View {
     let activity: NSManagedObject
     
     @State private var showingEditSheet = false
+    @State private var showingDeleteConfirmation = false
+    @State private var errorMessage: String? = nil
+    @State private var showingErrorBanner = false
+    @State private var isLoading = false
+    
+    @Environment(\.presentationMode) var presentationMode
     
     var body: some View {
-        ScrollView {
-            VStack(alignment: .leading, spacing: AppDesign.Spacing.medium) {
-                // ヘッダー
-                HStack {
-                    VStack(alignment: .leading) {
-                        Text(activityTypeText)
-                            .font(.title)
-                            .fontWeight(.bold)
+        ZStack {
+            ScrollView {
+                VStack(alignment: .leading, spacing: AppDesign.Spacing.medium) {
+                    // ヘッダー
+                    HStack {
+                        VStack(alignment: .leading) {
+                            Text(activityTypeText)
+                                .font(.title)
+                                .fontWeight(.bold)
+                            
+                            Text(formattedDate)
+                                .font(.subheadline)
+                                .foregroundColor(AppDesign.secondaryText)
+                        }
                         
-                        Text(formattedDate)
-                            .font(.subheadline)
-                            .foregroundColor(AppDesign.secondaryText)
+                        Spacer()
+                        
+                        // 評価スター
+                        HStack {
+                            ForEach(1...5, id: \.self) { index in
+                                Image(systemName: index <= (activity.value(forKey: "rating") as? Int ?? 0) ? AppIcons.Rating.starFill : AppIcons.Rating.star)
+                                    .foregroundColor(.yellow)
+                            }
+                        }
                     }
+                    
+                    Divider()
+                    
+                    // 基本情報
+                    Group {
+                        DetailRow(title: "場所", value: activity.value(forKey: "location") as? String ?? "")
+                        
+                        DetailRow(title: "メモ", value: activity.value(forKey: "notes") as? String ?? "")
+                    }
+                    
+                    Divider()
+                    
+                    // 詳細情報（試合または練習）
+                    if let type = activity.value(forKey: "type") as? String, type == "match" {
+                        // 試合詳細を表示
+                        if let matchDetails = fetchMatchDetails() {
+                            Group {
+                                DetailRow(title: "対戦相手", value: matchDetails.value(forKey: "opponent") as? String ?? "")
+                                
+                                DetailRow(title: "スコア", value: matchDetails.value(forKey: "score") as? String ?? "")
+                                
+                                HStack {
+                                    VStack(alignment: .leading) {
+                                        Text("ゴール")
+                                            .font(.headline)
+                                        
+                                        Text("\(matchDetails.value(forKey: "goalsScored") as? Int ?? 0)")
+                                    }
+                                    .frame(maxWidth: .infinity, alignment: .leading)
+                                    
+                                    VStack(alignment: .leading) {
+                                        Text("アシスト")
+                                            .font(.headline)
+                                        
+                                        Text("\(matchDetails.value(forKey: "assists") as? Int ?? 0)")
+                                    }
+                                    .frame(maxWidth: .infinity, alignment: .leading)
+                                }
+                                
+                                DetailRow(title: "出場時間", value: "\(matchDetails.value(forKey: "playingTime") as? Int ?? 0)分")
+                                
+                                DetailRow(title: "パフォーマンス評価", value: "\(matchDetails.value(forKey: "performance") as? Int ?? 0)/10")
+                            }
+                        }
+                    } else {
+                        // 練習詳細を表示
+                        if let practiceDetails = fetchPracticeDetails() {
+                            Group {
+                                DetailRow(title: "フォーカスエリア", value: practiceDetails.value(forKey: "focus") as? String ?? "")
+                                
+                                DetailRow(title: "練習時間", value: "\(practiceDetails.value(forKey: "duration") as? Int ?? 0)分")
+                                
+                                Text("練習強度")
+                                    .font(.headline)
+                                
+                                HStack {
+                                    ForEach(1...5, id: \.self) { index in
+                                        Image(systemName: index <= (practiceDetails.value(forKey: "intensity") as? Int ?? 0) ? AppIcons.Rating.circleFill : AppIcons.Rating.circle)
+                                            .foregroundColor(AppDesign.primaryColor)
+                                    }
+                                }
+                                
+                                DetailRow(title: "学んだこと", value: practiceDetails.value(forKey: "learnings") as? String ?? "")
+                            }
+                        }
+                    }
+                    
+                    // 削除ボタン
+                    Button(action: {
+                        showingDeleteConfirmation = true
+                    }) {
+                        HStack {
+                            Image(systemName: "trash")
+                            Text("記録を削除")
+                        }
+                        .frame(maxWidth: .infinity)
+                        .padding()
+                        .foregroundColor(.red)
+                        .overlay(
+                            RoundedRectangle(cornerRadius: 10)
+                                .stroke(Color.red, lineWidth: 1)
+                        )
+                    }
+                    .padding(.top, 30)
                     
                     Spacer()
-                    
-                    // 評価スター
-                    HStack {
-                        ForEach(1...5, id: \.self) { index in
-                            Image(systemName: index <= (activity.value(forKey: "rating") as? Int ?? 0) ? AppIcons.Rating.starFill : AppIcons.Rating.star)
-                                .foregroundColor(.yellow)
-                        }
-                    }
                 }
-                
-                Divider()
-                
-                // 基本情報
-                Group {
-                    DetailRow(title: "場所", value: activity.value(forKey: "location") as? String ?? "")
-                    
-                    DetailRow(title: "メモ", value: activity.value(forKey: "notes") as? String ?? "")
+                .padding()
+                .alert(isPresented: $showingDeleteConfirmation) {
+                    Alert(
+                        title: Text("記録を削除"),
+                        message: Text("この記録を削除してもよろしいですか？"),
+                        primaryButton: .destructive(Text("削除")) {
+                            deleteActivity()
+                        },
+                        secondaryButton: .cancel(Text("キャンセル"))
+                    )
                 }
-                
-                Divider()
-                
-                // 詳細情報（試合または練習）
-                if let type = activity.value(forKey: "type") as? String, type == "match" {
-                    // 試合詳細を表示
-                    if let matchDetails = fetchMatchDetails() {
-                        Group {
-                            DetailRow(title: "対戦相手", value: matchDetails.value(forKey: "opponent") as? String ?? "")
-                            
-                            DetailRow(title: "スコア", value: matchDetails.value(forKey: "score") as? String ?? "")
-                            
-                            HStack {
-                                VStack(alignment: .leading) {
-                                    Text("ゴール")
-                                        .font(.headline)
-                                    
-                                    Text("\(matchDetails.value(forKey: "goalsScored") as? Int ?? 0)")
-                                }
-                                .frame(maxWidth: .infinity, alignment: .leading)
-                                
-                                VStack(alignment: .leading) {
-                                    Text("アシスト")
-                                        .font(.headline)
-                                    
-                                    Text("\(matchDetails.value(forKey: "assists") as? Int ?? 0)")
-                                }
-                                .frame(maxWidth: .infinity, alignment: .leading)
-                            }
-                            
-                            DetailRow(title: "出場時間", value: "\(matchDetails.value(forKey: "playingTime") as? Int ?? 0)分")
-                            
-                            DetailRow(title: "パフォーマンス評価", value: "\(matchDetails.value(forKey: "performance") as? Int ?? 0)/10")
-                        }
-                    }
-                } else {
-                    // 練習詳細を表示
-                    if let practiceDetails = fetchPracticeDetails() {
-                        Group {
-                            DetailRow(title: "フォーカスエリア", value: practiceDetails.value(forKey: "focus") as? String ?? "")
-                            
-                            DetailRow(title: "練習時間", value: "\(practiceDetails.value(forKey: "duration") as? Int ?? 0)分")
-                            
-                            Text("練習強度")
-                                .font(.headline)
-                            
-                            HStack {
-                                ForEach(1...5, id: \.self) { index in
-                                    Image(systemName: index <= (practiceDetails.value(forKey: "intensity") as? Int ?? 0) ? AppIcons.Rating.circleFill : AppIcons.Rating.circle)
-                                        .foregroundColor(AppDesign.primaryColor)
-                                }
-                            }
-                            
-                            DetailRow(title: "学んだこと", value: practiceDetails.value(forKey: "learnings") as? String ?? "")
-                        }
-                    }
-                }
-                
-                Spacer()
             }
-            .padding()
+            
+            // エラーバナー
+            if let errorMessage = errorMessage, showingErrorBanner {
+                VStack {
+                    ErrorBanner(message: errorMessage) {
+                        showingErrorBanner = false
+                        self.errorMessage = nil
+                    }
+                    .padding(.top)
+                    
+                    Spacer()
+                }
+            }
+            
+            // ローディングオーバーレイ
+            if isLoading {
+                Color.black.opacity(0.3)
+                    .edgesIgnoringSafeArea(.all)
+                
+                LoadingView()
+            }
         }
         .navigationBarTitle("詳細", displayMode: .inline)
         .navigationBarItems(trailing: Button("編集") {
@@ -129,6 +186,8 @@ struct ActivityDetailView: View {
             let results = try context.fetch(request)
             return results.first
         } catch {
+            self.errorMessage = "試合詳細の取得に失敗しました"
+            self.showingErrorBanner = true
             print("試合詳細の取得に失敗: \(error)")
             return nil
         }
@@ -147,8 +206,46 @@ struct ActivityDetailView: View {
             let results = try context.fetch(request)
             return results.first
         } catch {
+            self.errorMessage = "練習詳細の取得に失敗しました"
+            self.showingErrorBanner = true
             print("練習詳細の取得に失敗: \(error)")
             return nil
+        }
+    }
+    
+    // 活動の削除
+    private func deleteActivity() {
+        isLoading = true
+        
+        let backgroundContext = PersistenceController.shared.newBackgroundContext()
+        
+        guard let activityID = activity.objectID else {
+            isLoading = false
+            errorMessage = "活動データが不正です"
+            showingErrorBanner = true
+            return
+        }
+        
+        backgroundContext.perform {
+            do {
+                let activityToDelete = try backgroundContext.existingObject(with: activityID)
+                backgroundContext.delete(activityToDelete)
+                
+                try backgroundContext.save()
+                
+                DispatchQueue.main.async {
+                    self.isLoading = false
+                    // 詳細画面を閉じて一覧に戻る
+                    self.presentationMode.wrappedValue.dismiss()
+                }
+            } catch {
+                DispatchQueue.main.async {
+                    self.isLoading = false
+                    self.errorMessage = "活動の削除に失敗しました: \(error.localizedDescription)"
+                    self.showingErrorBanner = true
+                }
+                print("活動の削除に失敗: \(error)")
+            }
         }
     }
     

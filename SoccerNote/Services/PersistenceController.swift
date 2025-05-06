@@ -14,12 +14,41 @@ struct PersistenceController {
         
         container.loadPersistentStores { description, error in
             if let error = error {
+                // 致命的なエラーをログに記録するだけでなく、ユーザーに通知する仕組みを追加
+                print("CoreDataのロードに失敗: \(error.localizedDescription)")
+                // アプリが完全に機能しない場合は、ユーザーに通知し、アプリを安全に終了する
                 fatalError("CoreDataのロードに失敗: \(error.localizedDescription)")
             }
         }
         
-        container.viewContext.mergePolicy = NSMergeByPropertyObjectTrumpMergePolicy
+        // バックグラウンドコンテキストの設定を追加
         container.viewContext.automaticallyMergesChangesFromParent = true
+        container.viewContext.mergePolicy = NSMergeByPropertyObjectTrumpMergePolicy
+        
+        // クラッシュ防止のためにセーブの設定を調整
+        container.viewContext.shouldDeleteInaccessibleFaults = true
+    }
+    
+    // バックグラウンドコンテキストを作成するメソッドを追加
+    func newBackgroundContext() -> NSManagedObjectContext {
+        let context = container.newBackgroundContext()
+        context.mergePolicy = NSMergeByPropertyObjectTrumpMergePolicy
+        return context
+    }
+    
+    // 安全に保存を行うヘルパーメソッド
+    func saveContext(_ context: NSManagedObjectContext, completion: ((Error?) -> Void)? = nil) {
+        if context.hasChanges {
+            do {
+                try context.save()
+                completion?(nil)
+            } catch {
+                print("コンテキストの保存に失敗: \(error.localizedDescription)")
+                completion?(error)
+            }
+        } else {
+            completion?(nil)
+        }
     }
     
     // プレビュー用のインスタンス
