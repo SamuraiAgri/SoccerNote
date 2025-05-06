@@ -30,7 +30,7 @@ struct StatsView: View {
                     .padding(.horizontal)
                     .padding(.top, 8)
                     
-                    // 1. アクティビティサマリーカード
+                    // ここで各種カードを表示
                     SimplifiedSummaryCard(
                         matchCount: matchViewModel.matches.count,
                         practiceCount: practiceViewModel.practices.count,
@@ -38,7 +38,6 @@ struct StatsView: View {
                     )
                     .padding(.horizontal)
                     
-                    // 2. パフォーマンスカード（試合）
                     let matchStats = matchViewModel.getStatistics()
                     SimplifiedMatchStatsCard(
                         totalGoals: matchStats.totalGoals,
@@ -47,7 +46,6 @@ struct StatsView: View {
                     )
                     .padding(.horizontal)
                     
-                    // 3. 練習統計
                     let practiceStats = practiceViewModel.getStatistics()
                     SimplifiedPracticeStatsCard(
                         totalDuration: practiceStats.totalDuration,
@@ -55,7 +53,6 @@ struct StatsView: View {
                     )
                     .padding(.horizontal)
                     
-                    // 4. 簡略化された進捗チャート
                     SimplifiedProgressChart(period: selectedPeriod)
                         .frame(height: 220)
                         .padding(.horizontal)
@@ -68,6 +65,36 @@ struct StatsView: View {
                 practiceViewModel.fetchPractices()
             }
         }
+    }
+    
+    // シーズンの日付範囲を取得
+    func getSeasonDateRange() -> (start: Date, end: Date) {
+        let calendar = Calendar.current
+        let currentDate = Date()
+        let year = calendar.component(.year, from: currentDate)
+        
+        // 4月1日から翌年3月31日までをシーズンとする
+        var startComponents = DateComponents()
+        startComponents.year = year
+        startComponents.month = 4
+        startComponents.day = 1
+        
+        var endComponents = DateComponents()
+        endComponents.year = year + 1
+        endComponents.month = 3
+        endComponents.day = 31
+        
+        let startDate = calendar.date(from: startComponents) ?? currentDate
+        let endDate = calendar.date(from: endComponents) ?? currentDate
+        
+        if currentDate < startDate {
+            return (
+                calendar.date(byAdding: .year, value: -1, to: startDate) ?? currentDate,
+                calendar.date(byAdding: .year, value: -1, to: endDate) ?? currentDate
+            )
+        }
+        
+        return (startDate, endDate)
     }
 }
 
@@ -324,7 +351,7 @@ struct SimplifiedProgressChart: View {
                     ZStack(alignment: .leading) {
                         // 水平線（目盛り）
                         VStack(spacing: geometry.size.height / 4) {
-                            ForEach(0..<4) { i in
+                            ForEach(0..<4, id: \.self) { i in
                                 Rectangle()
                                     .fill(Color.gray.opacity(0.2))
                                     .frame(height: 1)
@@ -396,50 +423,19 @@ struct SimplifiedProgressChart: View {
     // 期間に応じたラベル取得
     private func getLabelsForPeriod() -> [String] {
         switch period {
-               case .week:
-                   return ["月", "火", "水", "木", "金", "土"]
-               case .month:
-                   return ["1週", "2週", "3週", "4週", "5週", "6週"]
-               case .season:
-                   return ["4月", "5月", "6月", "7月", "8月", "9月"]
-               case .all:
-                   return ["前期", "中期", "後期", "次期", "来期", "将来"]
-               }
-           }
+        case .week:
+            return ["月", "火", "水", "木", "金", "土"]
+        case .month:
+            return ["1週", "2週", "3週", "4週", "5週", "6週"]
+        case .season:
+            return ["4月", "5月", "6月", "7月", "8月", "9月"]
+        case .all:
+            return ["前期", "中期", "後期", "次期", "来期", "将来"]
         }
+    }
+}
 
-        func getSeasonDateRange() -> (start: Date, end: Date) {
-           let calendar = Calendar.current
-           let currentDate = Date()
-           let year = calendar.component(.year, from: currentDate)
-           
-           // 例: 4月1日から翌年3月31日までをシーズンとする（学校年度に合わせた例）
-           var startComponents = DateComponents()
-           startComponents.year = year
-           startComponents.month = 4
-           startComponents.day = 1
-           
-           var endComponents = DateComponents()
-           endComponents.year = year + 1
-           endComponents.month = 3
-           endComponents.day = 31
-           
-           let startDate = calendar.date(from: startComponents) ?? currentDate
-           let endDate = calendar.date(from: endComponents) ?? currentDate
-           
-           // 現在の日付が次のシーズンなら、1年前のシーズンを返す
-           if currentDate < startDate {
-               return (
-                   calendar.date(byAdding: .year, value: -1, to: startDate) ?? currentDate,
-                   calendar.date(byAdding: .year, value: -1, to: endDate) ?? currentDate
-               )
-           }
-           
-           return (startDate, endDate)
-        }
-
-        // プレビュー
-        #Preview {
-           StatsView()
-               .environment(\.managedObjectContext, PersistenceController.preview.container.viewContext)
-        }
+#Preview {
+    StatsView()
+        .environment(\.managedObjectContext, PersistenceController.preview.container.viewContext)
+}

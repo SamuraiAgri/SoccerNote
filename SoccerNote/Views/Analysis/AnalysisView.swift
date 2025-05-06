@@ -101,21 +101,23 @@ struct AnalysisView: View {
                             .cornerRadius(12)
                         } else {
                             // 目標表示
-                            ForEach(goalViewModel.goals.prefix(3), id: \.self) { goal in
-                                NavigationLink(destination: GoalDetailView(goal: goal, goalViewModel: goalViewModel)) {
-                                    CompactGoalCard(goal: goal)
+                            VStack {
+                                ForEach(goalViewModel.goals.prefix(3), id: \.self) { goal in
+                                    NavigationLink(destination: GoalDetailView(goal: goal, goalViewModel: goalViewModel)) {
+                                        CompactGoalCard(goal: goal)
+                                    }
+                                    .buttonStyle(PlainButtonStyle())
                                 }
-                                .buttonStyle(PlainButtonStyle())
-                            }
-                            
-                            // すべての目標へのリンク
-                            if goalViewModel.goals.count > 3 {
-                                NavigationLink(destination: GoalsListView(goalViewModel: goalViewModel)) {
-                                    Text("すべての目標を表示")
-                                        .font(.subheadline)
-                                        .foregroundColor(AppDesign.primaryColor)
-                                        .frame(maxWidth: .infinity, alignment: .center)
-                                        .padding(.vertical, 8)
+                                
+                                // すべての目標へのリンク
+                                if goalViewModel.goals.count > 3 {
+                                    NavigationLink(destination: GoalsListView(goalViewModel: goalViewModel)) {
+                                        Text("すべての目標を表示")
+                                            .font(.subheadline)
+                                            .foregroundColor(AppDesign.primaryColor)
+                                            .frame(maxWidth: .infinity, alignment: .center)
+                                            .padding(.vertical, 8)
+                                    }
                                 }
                             }
                         }
@@ -389,7 +391,7 @@ struct CompactGoalCard: View {
                 Spacer()
                 
                 // 完了/進行中アイコン
-                if goal.value(forKey: "isCompleted") as? Bool ?? false {
+                if let isCompleted = goal.value(forKey: "isCompleted") as? Bool, isCompleted {
                     Image(systemName: "checkmark.circle.fill")
                         .foregroundColor(.green)
                 } else if let deadline = goal.value(forKey: "deadline") as? Date,
@@ -416,20 +418,28 @@ struct CompactGoalCard: View {
                 
                 Spacer()
                 
-                if let deadline = goal.value(forKey: "deadline") as? Date {
-                    let formatter = DateFormatter()
-                    formatter.dateStyle = .short
-                    formatter.timeStyle = .none
-                    
-                    Text("期限: \(formatter.string(from: deadline))")
-                        .font(.caption)
-                        .foregroundColor(.secondary)
+                // この部分を修正 - Groupで囲んでビュー階層を明確にする
+                Group {
+                    if let deadline = goal.value(forKey: "deadline") as? Date {
+                        let deadlineString = formatDate(deadline)
+                        Text("期限: \(deadlineString)")
+                            .font(.caption)
+                            .foregroundColor(.secondary)
+                    }
                 }
             }
         }
         .padding()
         .background(Color.gray.opacity(0.05))
         .cornerRadius(8)
+    }
+    
+    // 日付フォーマットを別メソッドに分離
+    private func formatDate(_ date: Date) -> String {
+        let formatter = DateFormatter()
+        formatter.dateStyle = .short
+        formatter.timeStyle = .none
+        return formatter.string(from: date)
     }
     
     // 進捗に応じた色
