@@ -4,7 +4,7 @@ import SwiftUI
 // アプリのデザインガイド
 struct AppDesign {
     // メインカラー - システムカラーを使用
-    static let primaryColor = Color("AppPrimaryColor") // アセット名を変更
+    static let primaryColor = Color("AppPrimaryColor")
     static let secondaryColor = Color.orange // アクセントカラー
     static let accentColor = Color.blue
     

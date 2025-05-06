@@ -59,7 +59,8 @@ struct SimplifiedActivityRow: View {
     }
 }
 
-#Preview("活動行", traits: .sizeThatFits) {
+// プレビューの修正
+#Preview("活動行") {
     let context = PersistenceController.preview.container.viewContext
     let request = NSFetchRequest<NSManagedObject>(entityName: "Activity")
     let activities = try! context.fetch(request)

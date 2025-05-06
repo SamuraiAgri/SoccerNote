@@ -639,58 +639,85 @@ struct PracticeDetailsView: View {
             VStack(alignment: .leading, spacing: 20) {
                 // 練習内容
                 VStack(alignment: .leading) {
-                    Text("フォーカスエリア")
-                        .font(.headline)
-                    
-                    TextField("例: パス練習、シュート練習など", text: $focus)
-                        .padding()
-                        .background(Color.gray.opacity(0.1))
-                        .cornerRadius(8)
-                        .onChange(of: focus) { _, newValue in
-                            // 入力文字数制限
-                            if newValue.count > ValidationRules.maxFocusLength {
-                                focus = String(newValue.prefix(ValidationRules.maxFocusLength))
+                    // SoccerNote/Views/AddRecord/AddRecordView.swift
+                    // 以下は最後部分の修正
+
+                                        Text("フォーカスエリア")
+                                            .font(.headline)
+                                        
+                                        TextField("例: パス練習、シュート練習など", text: $focus)
+                                            .padding()
+                                            .background(Color.gray.opacity(0.1))
+                                            .cornerRadius(8)
+                                            .onChange(of: focus) { _, newValue in
+                                                // 入力文字数制限
+                                                if newValue.count > ValidationRules.maxFocusLength {
+                                                    focus = String(newValue.prefix(ValidationRules.maxFocusLength))
+                                                }
+                                            }
+                                    }
+                                    
+                                    // 練習時間
+                                    VStack(alignment: .leading) {
+                                        Text("練習時間")
+                                            .font(.headline)
+                                        
+                                        HStack {
+                                            Slider(value: Binding(
+                                                get: { Double(duration) },
+                                                set: { duration = Int($0) }
+                                            ), in: Double(ValidationRules.durationRange.lowerBound)...Double(ValidationRules.durationRange.upperBound), step: 15)
+                                            .accentColor(AppDesign.primaryColor)
+                                            
+                                            Text("\(duration)分")
+                                                .frame(width: 60)
+                                        }
+                                        .padding()
+                                        .background(Color.gray.opacity(0.1))
+                                        .cornerRadius(8)
+                                    }
+                                    
+                                    // 練習強度
+                                    VStack(alignment: .leading) {
+                                        Text("練習強度")
+                                            .font(.headline)
+                                        
+                                        VStack {
+                                            HStack {
+                                                ForEach(1...5, id: \.self) { index in
+                                                    Circle()
+                                                        .fill(index <= intensity ? AppDesign.primaryColor : Color.gray.opacity(0.3))
+                                                        .frame(width: 30, height: 30)
+                                                        .onTapGesture {
+                                                            intensity = index
+                                                        }
+                                                }
+                                            }
+                                            
+                                            HStack {
+                                                Text("軽い")
+                                                    .font(.caption)
+                                                    .foregroundColor(.secondary)
+                                                    
+                                                Spacer()
+                                                    
+                                                Text("普通")
+                                                    .font(.caption)
+                                                    .foregroundColor(.secondary)
+                                                    
+                                                Spacer()
+                                                    
+                                                Text("ハード")
+                                                    .font(.caption)
+                                                    .foregroundColor(.secondary)
+                                            }
+                                        }
+                                        .padding()
+                                        .background(Color.gray.opacity(0.1))
+                                        .cornerRadius(8)
+                                    }
+                                }
+                                .padding()
                             }
                         }
-                }
-                
-                // 練習時間
-                VStack(alignment: .leading) {
-                    Text("練習時間")
-                        .font(.headline)
-                    
-                    HStack {
-                        Slider(value: Binding(
-                            get: { Double(duration) },
-                            set: { duration = Int($0) }
-                        ), in: Double(ValidationRules.durationRange.lowerBound)...Double(ValidationRules.durationRange.upperBound), step: 15)
-                        .accentColor(AppDesign.primaryColor)
-                        
-                        Text("\(duration)分")
-                            .frame(width: 60)
                     }
-                    .padding()
-                    .background(Color.gray.opacity(0.1))
-                    .cornerRadius(8)
-                }
-                
-                // 練習強度
-                VStack(alignment: .leading) {
-                    Text("練習強度")
-                        .font(.head
-                              Spacer()
-                                                              
-                                                          Text("ハード")
-                                                              .font(.caption)
-                                                              .foregroundColor(.secondary)
-                                                      }
-                                                  }
-                                                  .padding()
-                                                  .background(Color.gray.opacity(0.1))
-                                                  .cornerRadius(8)
-                                              }
-                                          }
-                                          .padding()
-                                      }
-                                  }
-                              }
