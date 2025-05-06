@@ -6,7 +6,15 @@ struct CalendarView: View {
     @State private var currentMonth = Date()
     @GestureState private var dragOffset: CGFloat = 0
     
+    // 活動データを取得するためのViewModel
+    @ObservedObject var activityViewModel: ActivityViewModel
+    
     let columns = Array(repeating: GridItem(.flexible()), count: 7)
+    
+    init(selectedDate: Binding<Date>, activityViewModel: ActivityViewModel) {
+        self._selectedDate = selectedDate
+        self.activityViewModel = activityViewModel
+    }
     
     var body: some View {
         VStack(spacing: 12) {
@@ -81,7 +89,7 @@ struct CalendarView: View {
                                                     (Calendar.current.component(.weekday, from: day.date) == 7 ? .blue : .primary)))
                                     )
                                 
-                                // アクティビティインジケーター
+                                // アクティビティインジケーター - 実際のデータに基づいて表示
                                 if hasActivity(for: day.date) {
                                     Circle()
                                         .fill(AppDesign.primaryColor.opacity(0.8))
@@ -164,14 +172,13 @@ struct CalendarView: View {
         return days
     }
     
-    // 日付にアクティビティがあるかどうか（サンプル実装）
+    // 日付にアクティビティがあるかどうかを実際のデータから確認
     private func hasActivity(for date: Date) -> Bool {
-        // ここでは仮のロジックを実装
-        // 実際のアプリでは、ViewModelからデータを取得する
         let calendar = Calendar.current
-        let day = calendar.component(.day, from: date)
         
-        // サンプルとして、奇数日にアクティビティがあるとする
-        return day % 2 == 1
+        return activityViewModel.activities.contains { activity in
+            guard let activityDate = activity.value(forKey: "date") as? Date else { return false }
+            return calendar.isDate(activityDate, inSameDayAs: date)
+        }
     }
 }

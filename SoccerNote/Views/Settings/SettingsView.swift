@@ -8,6 +8,11 @@ struct SettingsView: View {
     @AppStorage("position") private var position: String = ""
     @AppStorage("darkModeOn") private var darkModeOn: Bool = false
     
+    // リマインダー設定
+    @AppStorage("defaultReminderEnabled") private var defaultReminderEnabled: Bool = false
+    @AppStorage("matchReminderHours") private var matchReminderHours: Int = 24
+    @AppStorage("practiceReminderHours") private var practiceReminderHours: Int = 3
+    
     @State private var showingConfirmation = false
     @State private var confirmationMessage = ""
     
@@ -21,6 +26,35 @@ struct SettingsView: View {
                     TextField("名前", text: $userName)
                     TextField("チーム名", text: $teamName)
                     TextField("ポジション", text: $position)
+                }
+                
+                // リマインダー設定（追加）
+                Section(header: Text("リマインダー設定")) {
+                    Toggle("デフォルトでリマインダーを設定", isOn: $defaultReminderEnabled)
+                    
+                    if defaultReminderEnabled {
+                        VStack(alignment: .leading) {
+                            Text("試合前リマインダー: \(matchReminderHours)時間前")
+                            Slider(value: Binding(
+                                get: { Double(matchReminderHours) },
+                                set: { matchReminderHours = Int($0) }
+                            ), in: 1...72, step: 1)
+                            .accentColor(AppDesign.secondaryColor)
+                        }
+                        
+                        VStack(alignment: .leading) {
+                            Text("練習前リマインダー: \(practiceReminderHours)時間前")
+                            Slider(value: Binding(
+                                get: { Double(practiceReminderHours) },
+                                set: { practiceReminderHours = Int($0) }
+                            ), in: 1...24, step: 1)
+                            .accentColor(AppDesign.primaryColor)
+                        }
+                    }
+                    
+                    NavigationLink(destination: RemindersListView()) {
+                        Text("リマインダー管理")
+                    }
                 }
                 
                 // アプリ設定セクション
@@ -126,6 +160,9 @@ struct SettingsView: View {
                 print("コンテキストの保存に失敗: \(error)")
             }
         }
+        
+        // リマインダーもリセット
+        UNUserNotificationCenter.current().removeAllPendingNotificationRequests()
     }
 }
 

@@ -1,6 +1,7 @@
 // SoccerNote/Views/Records/ActivityDetailView.swift
 import SwiftUI
 import CoreData
+import UserNotifications
 
 struct ActivityDetailView: View {
     let activity: NSManagedObject
@@ -10,6 +11,12 @@ struct ActivityDetailView: View {
     @State private var errorMessage: String? = nil
     @State private var showingErrorBanner = false
     @State private var isLoading = false
+    
+    // リマインダー機能のための状態変数
+    @State private var hasReminder: Bool = false
+    @State private var reminderTime: Date = Date()
+    @State private var showingReminderSheet = false
+    @State private var isCheckingReminder = true
     
     @Environment(\.presentationMode) var presentationMode
     
@@ -106,6 +113,76 @@ struct ActivityDetailView: View {
                         }
                     }
                     
+                    // リマインダーセクション
+                    Group {
+                        Divider()
+                        
+                        VStack(alignment: .leading, spacing: 15) {
+                            Text("リマインダー")
+                                .font(.headline)
+                            
+                            if isCheckingReminder {
+                                HStack {
+                                    ProgressView()
+                                        .scaleEffect(0.8)
+                                    Text("確認中...")
+                                        .font(.subheadline)
+                                        .foregroundColor(.secondary)
+                                }
+                            } else {
+                                HStack {
+                                    if hasReminder {
+                                        Image(systemName: "bell.fill")
+                                            .foregroundColor(AppDesign.primaryColor)
+                                        
+                                        VStack(alignment: .leading) {
+                                            Text("リマインダー設定済み")
+                                                .font(.subheadline)
+                                            
+                                            Text(formattedReminderTime)
+                                                .font(.caption)
+                                                .foregroundColor(.secondary)
+                                        }
+                                        
+                                        Spacer()
+                                        
+                                        Button(action: {
+                                            showingReminderSheet = true
+                                        }) {
+                                            Text("編集")
+                                                .font(.subheadline)
+                                                .foregroundColor(AppDesign.primaryColor)
+                                        }
+                                        
+                                        Button(action: {
+                                            cancelReminder()
+                                        }) {
+                                            Image(systemName: "xmark.circle.fill")
+                                                .foregroundColor(.red)
+                                        }
+                                    } else {
+                                        Button(action: {
+                                            showingReminderSheet = true
+                                        }) {
+                                            HStack {
+                                                Image(systemName: "bell")
+                                                Text("リマインダーを設定")
+                                            }
+                                            .padding(.horizontal, 12)
+                                            .padding(.vertical, 6)
+                                            .background(AppDesign.primaryColor)
+                                            .foregroundColor(.white)
+                                            .cornerRadius(8)
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                        .padding()
+                        .background(Color.gray.opacity(0.1))
+                        .cornerRadius(10)
+                    }
+                    
                     // 削除ボタン
                     Button(action: {
                         showingDeleteConfirmation = true
@@ -172,6 +249,12 @@ struct ActivityDetailView: View {
                 EditPracticeView(activity: activity)
             }
         }
+        .sheet(isPresented: $showingReminderSheet) {
+            ReminderEditSheet(isPresented: $showingReminderSheet, activity: activity, reminderTime: $reminderTime, hasReminder: $hasReminder)
+        }
+        .onAppear {
+            checkForReminder()
+        }
     }
     
     // 試合詳細の取得
@@ -220,8 +303,7 @@ struct ActivityDetailView: View {
         
         let backgroundContext = PersistenceController.shared.newBackgroundContext()
         
-        // エラー箇所：objectIDがオプショナルでないのに条件分岐で使用している
-        // 修正: objectIDを直接使用し、ガード文は削除
+        // objectIDがオプショナルでないのでガード文は削除し、直接使用
         let activityID = activity.objectID
         
         backgroundContext.perform {
@@ -230,6 +312,11 @@ struct ActivityDetailView: View {
                 backgroundContext.delete(activityToDelete)
                 
                 try backgroundContext.save()
+                
+                // 関連リマインダーも削除
+                if let id = self.activity.value(forKey: "id") as? UUID {
+                    ReminderManager.shared.cancelReminder(for: id)
+                }
                 
                 DispatchQueue.main.async {
                     self.isLoading = false
@@ -247,18 +334,18 @@ struct ActivityDetailView: View {
         }
     }
     
-    // ヘルパープロパティ
-    private var activityTypeText: String {
-        let type = activity.value(forKey: "type") as? String ?? ""
-        return type == "match" ? "試合" : "練習"
-    }
-    
-    private var formattedDate: String {
-        let date = activity.value(forKey: "date") as? Date ?? Date()
-        let formatter = DateFormatter()
-        formatter.dateStyle = .long
-        formatter.timeStyle = .short
-        formatter.locale = Locale(identifier: "ja_JP")
-        return formatter.string(from: date)
-    }
-}
+    // リマインダーの存在チェック
+    private func checkForReminder() {
+        isCheckingReminder = true
+        
+        guard let id = activity.value(forKey: "id") as? UUID else {
+            isCheckingReminder = false
+            return
+        }
+        
+        UNUserNotificationCenter.current().getPendingNotificationRequests { requests in
+            let identifier = "activity-reminder-\(id.uuidString)"
+            
+            if let reminderRequest = requests.first(where: { $0.identifier == identifier }),
+               let trigger = reminderRequest.trigger as? UNCalendarNotificationTrigger,
+               let next

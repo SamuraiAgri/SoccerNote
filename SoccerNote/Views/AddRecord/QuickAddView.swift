@@ -35,13 +35,21 @@ struct QuickAddView: View {
     @State private var errorMessage = ""
     @State private var isLoading = false
     
+    // リマインダー設定
+    @State private var setReminder = false
+    @State private var reminderTime: Date
+    
     init(date: Date? = nil) {
         let context = PersistenceController.shared.container.viewContext
         _activityViewModel = StateObject(wrappedValue: ActivityViewModel(viewContext: context))
         _matchViewModel = StateObject(wrappedValue: MatchViewModel(viewContext: context))
         _practiceViewModel = StateObject(wrappedValue: PracticeViewModel(viewContext: context))
         
-        self._date = State(initialValue: date ?? Date())
+        let initialDate = date ?? Date()
+        self._date = State(initialValue: initialDate)
+        
+        // リマインダー時間のデフォルト設定（1時間前）
+        self._reminderTime = State(initialValue: initialDate.addingTimeInterval(-3600))
     }
     
     var body: some View {
@@ -270,6 +278,20 @@ struct QuickAddView: View {
                             .stroke(Color.gray.opacity(0.2), lineWidth: 1)
                     )
             }
+            
+            // リマインダー設定
+            VStack(alignment: .leading) {
+                Toggle("リマインダーを設定", isOn: $setReminder)
+                    .padding(.vertical, 8)
+                
+                if setReminder {
+                    DatePicker("リマインダー時間", selection: $reminderTime)
+                        .datePickerStyle(CompactDatePickerStyle())
+                        .padding(12)
+                        .background(Color.gray.opacity(0.1))
+                        .cornerRadius(8)
+                }
+            }
         }
     }
     
@@ -460,64 +482,97 @@ struct QuickAddView: View {
         }
     }
     
-    // 記録保存処理
+    // 記録保存処理（修正版）
     private func saveRecord() {
         isLoading = true
         
-        // 活動記録の保存
-        guard let activity = activityViewModel.saveActivity(
-            type: selectedType,
-            date: date,
-            location: location,
-            notes: notes,
-            rating: rating
-        ) else {
-            isLoading = false
-            errorMessage = activityViewModel.errorMessage ?? "保存に失敗しました"
-            showingErrorAlert = true
-            return
-        }
+        // バックグラウンドコンテキストを使用してデータ保存
+        let backgroundContext = PersistenceController.shared.newBackgroundContext()
         
-        // 詳細情報の保存
-        if selectedType == .match {
-            // 試合詳細の保存
-            matchViewModel.saveMatch(
-                activity: activity,
-                opponent: opponent,
-                score: score,
-                goalsScored: goalsScored,
-                assists: assists,
-                playingTime: 90, // デフォルト値
-                performance: 5,  // デフォルト値
-                photos: nil
-            )
+        backgroundContext.perform {
+            // 活動エンティティの作成
+            let activity = NSEntityDescription.insertNewObject(forEntityName: "Activity", into: backgroundContext)
+            activity.setValue(self.date, forKey: "date")
+            activity.setValue(self.selectedType.rawValue, forKey: "type")
+            activity.setValue(self.location, forKey: "location")
+            activity.setValue(self.notes, forKey: "notes")
+            activity.setValue(self.rating, forKey: "rating")
+            activity.setValue(UUID(), forKey: "id")
             
-            if let errorMessage = matchViewModel.errorMessage {
-                isLoading = false
-                self.errorMessage = errorMessage
-                showingErrorAlert = true
-                return
+            // 試合か練習かによって詳細情報を保存
+            if self.selectedType == .match {
+                let match = NSEntityDescription.insertNewObject(forEntityName: "Match", into: backgroundContext)
+                match.setValue(self.opponent, forKey: "opponent")
+                match.setValue(self.score, forKey: "score")
+                match.setValue(self.goalsScored, forKey: "goalsScored")
+                match.setValue(self.assists, forKey: "assists")
+                match.setValue(90, forKey: "playingTime") // デフォルト値
+                match.setValue(5, forKey: "performance") // デフォルト値
+                match.setValue(UUID(), forKey: "id")
+                match.setValue(activity, forKey: "activity")
+            } else {
+                let practice = NSEntityDescription.insertNewObject(forEntityName: "Practice", into: backgroundContext)
+                practice.setValue(self.focus, forKey: "focus")
+                practice.setValue(self.duration, forKey: "duration")
+                practice.setValue(self.intensity, forKey: "intensity")
+                practice.setValue("", forKey: "learnings")
+                practice.setValue(UUID(), forKey: "id")
+                practice.setValue(activity, forKey: "activity")
             }
-        } else {
-            // 練習詳細の保存
-            practiceViewModel.savePractice(
-                activity: activity,
-                focus: focus,
-                duration: duration,
-                intensity: intensity,
-                learnings: ""  // デフォルト値
-            )
             
-            if let errorMessage = practiceViewModel.errorMessage {
-                isLoading = false
-                self.errorMessage = errorMessage
-                showingErrorAlert = true
-                return
+            // データを保存
+            do {
+                try backgroundContext.save()
+                
+                // リマインダーが設定されていれば登録
+                if self.setReminder {
+                    DispatchQueue.main.async {
+                        self.scheduleReminder()
+                    }
+                }
+                
+                DispatchQueue.main.async {
+                    self.isLoading = false
+                    self.showingSuccessAlert = true
+                }
+            } catch {
+                DispatchQueue.main.async {
+                    self.isLoading = false
+                    self.errorMessage = "保存に失敗しました: \(error.localizedDescription)"
+                    self.showingErrorAlert = true
+                }
             }
         }
+    }
+    
+    // リマインダーをスケジュール
+    private func scheduleReminder() {
+        let center = UNUserNotificationCenter.current()
         
-        isLoading = false
-        showingSuccessAlert = true
+        // 通知の許可を確認
+        center.requestAuthorization(options: [.alert, .sound]) { granted, error in
+            if granted {
+                // 通知コンテンツの作成
+                let content = UNMutableNotificationContent()
+                content.title = selectedType == .match ? "試合リマインダー" : "練習リマインダー"
+                content.body = "\(location)での\(selectedType.rawValue)の時間です。"
+                content.sound = UNNotificationSound.default
+                
+                // 通知をトリガーする時間コンポーネントを作成
+                let triggerDate = Calendar.current.dateComponents([.year, .month, .day, .hour, .minute], from: reminderTime)
+                let trigger = UNCalendarNotificationTrigger(dateMatching: triggerDate, repeats: false)
+                
+                // リクエストを作成して追加
+                let identifier = UUID().uuidString
+                let request = UNNotificationRequest(identifier: identifier, content: content, trigger: trigger)
+                
+                center.add(request) { error in
+                    if let error = error {
+                        print("リマインダーの設定に失敗しました: \(error.localizedDescription)")
+                    }
+                }
+            }
+        }
     }
 }
 
