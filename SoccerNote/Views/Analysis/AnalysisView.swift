@@ -159,11 +159,11 @@ struct ActivitySummaryCard: View {
                 VStack {
                     Text("\(matchCount)")
                         .font(.system(size: 32, weight: .bold))
-                        .foregroundColor(.orange)
+                        .foregroundColor(AppDesign.secondaryColor)  // 統一された定義を使用
                     
                     Text("試合")
                         .font(.caption)
-                        .foregroundColor(.secondary)
+                        .foregroundColor(AppDesign.secondaryText)
                 }
                 .frame(maxWidth: .infinity)
                 

@@ -3,19 +3,19 @@ import SwiftUI
 
 // アプリのデザインガイド
 struct AppDesign {
-    // メインカラー - アセット名をAppPrimaryColorに変更
-    static let primaryColor = Color("AppPrimaryColor")
-    static let secondaryColor = Color.orange
-    static let accentColor = Color.blue
+    // メインカラー - アセットではなくExtensionから取得
+    static let primaryColor = Color.appPrimary
+    static let secondaryColor = Color.appSecondary
+    static let accentColor = Color.appAccent
     
     // テキストカラー
-    static let primaryText = Color.primary
-    static let secondaryText = Color.secondary
+    static let primaryText = Color.appPrimaryText
+    static let secondaryText = Color.appSecondaryText
     
     // コンポーネントカラー
-    static let backgroundColor = Color(UIColor.systemBackground)
-    static let secondaryBackground = Color(UIColor.secondarySystemBackground)
-    static let dividerColor = Color.gray.opacity(0.3)
+    static let backgroundColor = Color.appBackground
+    static let secondaryBackground = Color.appBackgroundSecondary
+    static let dividerColor = Color.appDivider
     
     // フォントサイズ
     struct FontSize {
@@ -63,96 +63,5 @@ struct AppDesign {
         UINavigationBar.appearance().scrollEdgeAppearance = navigationBarAppearance
         UINavigationBar.appearance().standardAppearance = navigationBarAppearance
         UINavigationBar.appearance().tintColor = UIColor(primaryColor)
-    }
-}
-
-// カスタムテキストスタイル
-extension Text {
-    func titleStyle() -> some View {
-        self.font(.system(size: AppDesign.FontSize.title, weight: .bold))
-            .foregroundColor(AppDesign.primaryText)
-    }
-    
-    func headerStyle() -> some View {
-        self.font(.system(size: AppDesign.FontSize.header, weight: .semibold))
-            .foregroundColor(AppDesign.primaryText)
-    }
-    
-    func bodyStyle() -> some View {
-        self.font(.system(size: AppDesign.FontSize.body))
-            .foregroundColor(AppDesign.primaryText)
-    }
-    
-    func captionStyle() -> some View {
-        self.font(.system(size: AppDesign.FontSize.caption))
-            .foregroundColor(AppDesign.secondaryText)
-    }
-}
-
-// カスタムボタンスタイル
-struct PrimaryButtonStyle: ButtonStyle {
-    var isEnabled: Bool = true
-    
-    func makeBody(configuration: Configuration) -> some View {
-        configuration.label
-            .padding()
-            .frame(maxWidth: .infinity)
-            .background(isEnabled ? (configuration.isPressed ? AppDesign.primaryColor.opacity(0.8) : AppDesign.primaryColor) : Color.gray)
-            .foregroundColor(.white)
-            .cornerRadius(AppDesign.CornerRadius.medium)
-            .scaleEffect(configuration.isPressed ? 0.98 : 1)
-            .animation(AppDesign.Animation.standard, value: configuration.isPressed)
-    }
-}
-
-struct SecondaryButtonStyle: ButtonStyle {
-    func makeBody(configuration: Configuration) -> some View {
-        configuration.label
-            .padding()
-            .frame(maxWidth: .infinity)
-            .background(AppDesign.secondaryBackground)
-            .foregroundColor(AppDesign.primaryColor)
-            .cornerRadius(AppDesign.CornerRadius.medium)
-            .overlay(
-                RoundedRectangle(cornerRadius: AppDesign.CornerRadius.medium)
-                    .stroke(AppDesign.primaryColor, lineWidth: 1)
-            )
-            .scaleEffect(configuration.isPressed ? 0.98 : 1)
-            .animation(AppDesign.Animation.standard, value: configuration.isPressed)
-    }
-}
-
-// ボタン拡張
-extension Button {
-    func primaryStyle(isEnabled: Bool = true) -> some View {
-        self.buttonStyle(PrimaryButtonStyle(isEnabled: isEnabled))
-    }
-    
-    func secondaryStyle() -> some View {
-        self.buttonStyle(SecondaryButtonStyle())
-    }
-}
-
-// SwiftUIでカスタムモディファイアを追加
-struct RoundedShadowModifier: ViewModifier {
-    let cornerRadius: CGFloat
-    let shadowRadius: CGFloat
-    
-    func body(content: Content) -> some View {
-        content
-            .background(AppDesign.backgroundColor)
-            .cornerRadius(cornerRadius)
-            .shadow(color: Color.black.opacity(0.1), radius: shadowRadius, x: 0, y: 1)
-    }
-}
-
-extension View {
-    func roundedShadow(cornerRadius: CGFloat = AppDesign.CornerRadius.medium, shadowRadius: CGFloat = 3) -> some View {
-        self.modifier(RoundedShadowModifier(cornerRadius: cornerRadius, shadowRadius: shadowRadius))
-    }
-    
-    // アニメーション付きのトランジション
-    func smoothTransition() -> some View {
-        self.transition(.opacity.combined(with: .scale(scale: 0.95)).animation(.easeInOut(duration: 0.2)))
     }
 }
