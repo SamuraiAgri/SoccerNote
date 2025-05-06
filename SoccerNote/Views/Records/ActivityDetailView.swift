@@ -348,4 +348,87 @@ struct ActivityDetailView: View {
             
             if let reminderRequest = requests.first(where: { $0.identifier == identifier }),
                let trigger = reminderRequest.trigger as? UNCalendarNotificationTrigger,
-               let next
+               let nextTriggerDate = trigger.nextTriggerDate() {
+                
+                DispatchQueue.main.async {
+                    self.hasReminder = true
+                    self.reminderTime = nextTriggerDate
+                    self.isCheckingReminder = false
+                }
+            } else {
+                // リマインダーが見つからない場合はデフォルト時間を計算
+                DispatchQueue.main.async {
+                    if let date = self.activity.value(forKey: "date") as? Date {
+                        // デフォルトでは1時間前に設定
+                        self.reminderTime = date.addingTimeInterval(-3600)
+                    }
+                    self.hasReminder = false
+                    self.isCheckingReminder = false
+                }
+            }
+        }
+    }
+    
+    // リマインダーの設定
+    private func setReminder() {
+        guard let id = activity.value(forKey: "id") as? UUID else { return }
+        
+        // まず既存のリマインダーをキャンセル
+        let identifier = "activity-reminder-\(id.uuidString)"
+        UNUserNotificationCenter.current().removePendingNotificationRequests(withIdentifiers: [identifier])
+        
+        // 通知許可の確認
+        UNUserNotificationCenter.current().requestAuthorization(options: [.alert, .sound]) { granted, _ in
+            if granted {
+                // リマインダーマネージャーを使用
+                ReminderManager.shared.scheduleReminder(for: self.activity, at: self.reminderTime) { error in
+                    DispatchQueue.main.async {
+                        if let error = error {
+                            self.errorMessage = "リマインダーの設定に失敗しました: \(error.localizedDescription)"
+                            self.showingErrorBanner = true
+                            self.hasReminder = false
+                        } else {
+                            self.hasReminder = true
+                        }
+                    }
+                }
+            } else {
+                DispatchQueue.main.async {
+                    self.errorMessage = "通知の許可が必要です"
+                    self.showingErrorBanner = true
+                    self.hasReminder = false
+                }
+            }
+        }
+    }
+    
+    // リマインダーのキャンセル
+    private func cancelReminder() {
+        guard let id = activity.value(forKey: "id") as? UUID else { return }
+        ReminderManager.shared.cancelReminder(for: id)
+        hasReminder = false
+    }
+    
+    // ヘルパープロパティ
+    private var activityTypeText: String {
+        let type = activity.value(forKey: "type") as? String ?? ""
+        return type == "match" ? "試合" : "練習"
+    }
+    
+    private var formattedDate: String {
+        let date = activity.value(forKey: "date") as? Date ?? Date()
+        let formatter = DateFormatter()
+        formatter.dateStyle = .long
+        formatter.timeStyle = .short
+        formatter.locale = Locale(identifier: "ja_JP")
+        return formatter.string(from: date)
+    }
+    
+    private var formattedReminderTime: String {
+        let formatter = DateFormatter()
+        formatter.dateStyle = .medium
+        formatter.timeStyle = .short
+        formatter.locale = Locale(identifier: "ja_JP")
+        return formatter.string(from: reminderTime)
+    }
+}
