@@ -161,5 +161,5 @@ struct GrowthChartView: View {
 }
 
 #Preview {
-    GrowthChartView(period: .month)
+    GrowthChartView(period: StatsPeriod.month)
 }

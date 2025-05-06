@@ -2,14 +2,14 @@
 import SwiftUI
 
 struct CalendarView: View {
-    @State private var selectedDate = Date()
+    @Binding var selectedDate: Date
     @State private var currentMonth = Date()
     @GestureState private var dragOffset: CGFloat = 0
     
     let columns = Array(repeating: GridItem(.flexible()), count: 7)
     
     var body: some View {
-        VStack {
+        VStack(spacing: 12) {
             // カレンダーヘッダー
             HStack {
                 Button(action: {
@@ -18,13 +18,17 @@ struct CalendarView: View {
                     }
                 }) {
                     Image(systemName: "chevron.left")
-                        .foregroundColor(.green)
+                        .foregroundColor(AppDesign.primaryColor)
+                        .padding(8)
+                        .background(Color.gray.opacity(0.1))
+                        .cornerRadius(8)
                 }
                 
                 Spacer()
                 
                 Text(monthYearText)
                     .font(.headline)
+                    .foregroundColor(.primary)
                 
                 Spacer()
                 
@@ -34,10 +38,13 @@ struct CalendarView: View {
                     }
                 }) {
                     Image(systemName: "chevron.right")
-                        .foregroundColor(.green)
+                        .foregroundColor(AppDesign.primaryColor)
+                        .padding(8)
+                        .background(Color.gray.opacity(0.1))
+                        .cornerRadius(8)
                 }
             }
-            .padding(.bottom)
+            .padding(.horizontal, 4)
             
             // 曜日ヘッダー
             HStack {
@@ -45,29 +52,56 @@ struct CalendarView: View {
                     Text(day)
                         .font(.caption)
                         .frame(maxWidth: .infinity)
-                        .foregroundColor(day == "日" ? .red : .primary)
+                        .foregroundColor(day == "日" ? .red : (day == "土" ? .blue : .primary))
                 }
             }
+            .padding(.top, 8)
             
             // 日付グリッド
-            LazyVGrid(columns: columns, spacing: 10) {
-                ForEach(daysInMonth, id: \.self) { date in
-                    if date.isPlaceholder {
+            LazyVGrid(columns: columns, spacing: 15) {
+                ForEach(daysInMonth, id: \.self) { day in
+                    if day.isPlaceholder {
                         Text("")
                             .frame(maxWidth: .infinity, minHeight: 35)
                     } else {
-                        CalendarDayView(date: date.date, isSelected: Calendar.current.isDate(date.date, inSameDayAs: selectedDate))
-                            .onTapGesture {
-                                selectedDate = date.date
+                        Button(action: {
+                            withAnimation(.spring()) {
+                                selectedDate = day.date
                             }
+                        }) {
+                            VStack(spacing: 4) {
+                                // 日付
+                                Text("\(Calendar.current.component(.day, from: day.date))")
+                                    .font(.system(size: 16))
+                                    .fontWeight(Calendar.current.isDate(day.date, inSameDayAs: selectedDate) ? .bold : .regular)
+                                    .foregroundColor(
+                                        Calendar.current.isDate(day.date, inSameDayAs: selectedDate) ? .white :
+                                            (Calendar.current.isDateInToday(day.date) ? AppDesign.primaryColor :
+                                                (Calendar.current.component(.weekday, from: day.date) == 1 ? .red :
+                                                    (Calendar.current.component(.weekday, from: day.date) == 7 ? .blue : .primary)))
+                                    )
+                                
+                                // アクティビティインジケーター
+                                if hasActivity(for: day.date) {
+                                    Circle()
+                                        .fill(AppDesign.primaryColor.opacity(0.8))
+                                        .frame(width: 6, height: 6)
+                                }
+                            }
+                            .frame(width: 35, height: 35)
+                            .background(
+                                Circle()
+                                    .fill(Calendar.current.isDate(day.date, inSameDayAs: selectedDate) ? AppDesign.primaryColor : Color.clear)
+                            )
+                        }
                     }
                 }
             }
         }
         .padding()
-        .background(Color.white)
-        .cornerRadius(10)
-        .shadow(radius: 1)
+        .background(Color(.systemBackground))
+        .cornerRadius(12)
+        .shadow(color: Color.black.opacity(0.05), radius: 5, x: 0, y: 2)
         .gesture(
             DragGesture()
                 .updating($dragOffset) { value, state, _ in
@@ -90,7 +124,7 @@ struct CalendarView: View {
         )
     }
     
-    // ヘルパープロパティとメソッド
+    // 月と年の表示テキスト
     private var monthYearText: String {
         let formatter = DateFormatter()
         formatter.dateFormat = "yyyy年M月"
@@ -98,6 +132,7 @@ struct CalendarView: View {
         return formatter.string(from: currentMonth)
     }
     
+    // 月の日付一覧を取得
     private var daysInMonth: [CalendarDay] {
         let calendar = Calendar.current
         
@@ -128,41 +163,15 @@ struct CalendarView: View {
         
         return days
     }
-}
-
-// カレンダー日表示
-struct CalendarDayView: View {
-    let date: Date
-    let isSelected: Bool
     
-    var body: some View {
-        ZStack {
-            Circle()
-                .fill(isSelected ? Color.green : Color.clear)
-                .frame(width: 35, height: 35)
-            
-            Text("\(Calendar.current.component(.day, from: date))")
-                .font(.subheadline)
-                .foregroundColor(isSelected ? .white : dayTextColor)
-        }
-        .frame(maxWidth: .infinity, minHeight: 35)
-    }
-    
-    // 日曜日や今日の日付の色分け
-    private var dayTextColor: Color {
+    // 日付にアクティビティがあるかどうか（サンプル実装）
+    private func hasActivity(for date: Date) -> Bool {
+        // ここでは仮のロジックを実装
+        // 実際のアプリでは、ViewModelからデータを取得する
         let calendar = Calendar.current
-        let weekday = calendar.component(.weekday, from: date)
+        let day = calendar.component(.day, from: date)
         
-        if calendar.isDateInToday(date) {
-            return .orange // アクセントカラー
-        } else if weekday == 1 { // 日曜日
-            return .red
-        } else {
-            return .primary
-        }
+        // サンプルとして、奇数日にアクティビティがあるとする
+        return day % 2 == 1
     }
-}
-
-#Preview {
-    CalendarView()
 }

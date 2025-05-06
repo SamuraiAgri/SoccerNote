@@ -24,7 +24,7 @@ struct RecordsHomeView: View {
             ZStack {
                 VStack(spacing: 0) {
                     // カレンダービュー - 引数エラーを修正
-                    CalendarView()
+                    CalendarView(selectedDate: $selectedDate)
                         .frame(height: 350)
                         .padding(.top)
                         .padding(.horizontal)
@@ -159,7 +159,7 @@ struct RecordsHomeView: View {
                 }
             }
             .sheet(isPresented: $addSheetController.isShowingAddSheet) {
-                AddRecordView(preselectedDate: selectedDate)
+                QuickAddView(date: selectedDate)
                     .environment(\.managedObjectContext, viewContext)
             }
             .onChange(of: activityViewModel.errorMessage) { _, newValue in

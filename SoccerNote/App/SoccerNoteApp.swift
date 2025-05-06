@@ -7,10 +7,9 @@ struct SoccerNoteApp: App {
     
     init() {
         // アプリ起動時にUIの外観を設定
-        AppTabBarAppearance.setupAppearance()
-        AppNavigationBarAppearance.setupAppearance()
+        AppDesign.setupAppearance()
         
-        // メモリ警告通知を監視（構造体内なのでselfをキャプチャする問題を修正）
+        // メモリ警告通知を監視
         setupMemoryWarningObserver()
     }
     
@@ -18,13 +17,14 @@ struct SoccerNoteApp: App {
         WindowGroup {
             MainTabView()
                 .environment(\.managedObjectContext, persistenceController.container.viewContext)
+                .accentColor(AppDesign.primaryColor)
                 .onAppear {
                     checkForPreviousCrash()
                 }
         }
     }
     
-    // メモリ警告監視の設定（構造体外にメソッドを分離）
+    // メモリ警告監視の設定
     private func setupMemoryWarningObserver() {
         NotificationCenter.default.addObserver(
             forName: UIApplication.didReceiveMemoryWarningNotification,
@@ -61,8 +61,7 @@ struct SoccerNoteApp: App {
                 let crashLog = try String(contentsOf: fileURL, encoding: .utf8)
                 print("クラッシュログの内容: \(crashLog)")
                 
-                // ログを分析し、必要なデータ修復などを行う
-                // 修復処理の実装...
+                // 修復処理が必要な場合はここに実装
                 
                 // 処理が完了したらログを削除
                 try FileManager.default.removeItem(at: fileURL)

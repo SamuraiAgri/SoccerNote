@@ -1,19 +1,22 @@
-// SoccerNote/Views/Stats/StatsView.swift
+// SoccerNote/Views/Analysis/AnalysisView.swift
 import SwiftUI
 import CoreData
 
-struct StatsView: View {
+struct AnalysisView: View {
     @Environment(\.managedObjectContext) private var viewContext
     @StateObject private var matchViewModel: MatchViewModel
     @StateObject private var practiceViewModel: PracticeViewModel
+    @StateObject private var goalViewModel: GoalViewModel
     
     // 期間フィルター
     @State private var selectedPeriod: StatsPeriod = .month
+    @State private var showingAddGoalSheet = false
     
     init() {
         let context = PersistenceController.shared.container.viewContext
         _matchViewModel = StateObject(wrappedValue: MatchViewModel(viewContext: context))
         _practiceViewModel = StateObject(wrappedValue: PracticeViewModel(viewContext: context))
+        _goalViewModel = StateObject(wrappedValue: GoalViewModel(viewContext: context))
     }
     
     var body: some View {
@@ -23,56 +26,123 @@ struct StatsView: View {
                     // 期間選択セグメントコントロール
                     Picker("期間", selection: $selectedPeriod) {
                         ForEach(StatsPeriod.allCases) { period in
-                            Text(period.rawValue).tag(period)
+                            Text(period.displayName).tag(period)
                         }
                     }
                     .pickerStyle(SegmentedPickerStyle())
                     .padding(.horizontal)
                     .padding(.top, 8)
                     
-                    // 1. アクティビティサマリーカード
-                    SimplifiedSummaryCard(
+                    // 1. 活動サマリーカード
+                    ActivitySummaryCard(
                         matchCount: matchViewModel.matches.count,
                         practiceCount: practiceViewModel.practices.count,
                         period: selectedPeriod
                     )
                     .padding(.horizontal)
                     
-                    // 2. パフォーマンスカード（試合）
+                    // 2. 試合統計カード
                     let matchStats = matchViewModel.getStatistics()
-                    SimplifiedMatchStatsCard(
+                    MatchStatsQuickCard(
                         totalGoals: matchStats.totalGoals,
                         totalAssists: matchStats.totalAssists,
                         averagePerformance: matchStats.averagePerformance
                     )
                     .padding(.horizontal)
                     
-                    // 3. 練習統計
+                    // 3. 練習統計カード
                     let practiceStats = practiceViewModel.getStatistics()
-                    SimplifiedPracticeStatsCard(
+                    PracticeStatsQuickCard(
                         totalDuration: practiceStats.totalDuration,
                         averageIntensity: practiceStats.averageIntensity
                     )
                     .padding(.horizontal)
                     
-                    // 4. 簡略化された進捗チャート
-                    SimplifiedProgressChart(period: selectedPeriod)
-                        .frame(height: 220)
-                        .padding(.horizontal)
+                    // 4. 目標セクション
+                    VStack(alignment: .leading, spacing: 12) {
+                        HStack {
+                            Text("目標管理")
+                                .font(.headline)
+                            
+                            Spacer()
+                            
+                            Button(action: {
+                                showingAddGoalSheet = true
+                            }) {
+                                Image(systemName: "plus.circle")
+                                    .foregroundColor(AppDesign.primaryColor)
+                            }
+                        }
+                        
+                        if goalViewModel.goals.isEmpty {
+                            // 目標がない場合
+                            VStack(spacing: 16) {
+                                Image(systemName: "flag")
+                                    .font(.system(size: 40))
+                                    .foregroundColor(.gray)
+                                
+                                Text("目標が設定されていません")
+                                    .font(.subheadline)
+                                
+                                Button(action: {
+                                    showingAddGoalSheet = true
+                                }) {
+                                    Text("目標を追加する")
+                                        .padding(.horizontal, 16)
+                                        .padding(.vertical, 8)
+                                        .background(AppDesign.primaryColor)
+                                        .foregroundColor(.white)
+                                        .cornerRadius(8)
+                                }
+                            }
+                            .frame(maxWidth: .infinity)
+                            .padding()
+                            .background(Color.gray.opacity(0.1))
+                            .cornerRadius(12)
+                        } else {
+                            // 目標表示
+                            ForEach(goalViewModel.goals.prefix(3), id: \.self) { goal in
+                                NavigationLink(destination: GoalDetailView(goal: goal, goalViewModel: goalViewModel)) {
+                                    CompactGoalCard(goal: goal)
+                                }
+                                .buttonStyle(PlainButtonStyle())
+                            }
+                            
+                            // すべての目標へのリンク
+                            if goalViewModel.goals.count > 3 {
+                                NavigationLink(destination: GoalsListView(goalViewModel: goalViewModel)) {
+                                    Text("すべての目標を表示")
+                                        .font(.subheadline)
+                                        .foregroundColor(AppDesign.primaryColor)
+                                        .frame(maxWidth: .infinity, alignment: .center)
+                                        .padding(.vertical, 8)
+                                }
+                            }
+                        }
+                    }
+                    .padding()
+                    .background(Color(.systemBackground))
+                    .cornerRadius(12)
+                    .shadow(color: Color.black.opacity(0.05), radius: 5, x: 0, y: 2)
+                    .padding(.horizontal)
                 }
                 .padding(.bottom)
             }
-            .navigationTitle("統計")
+            .navigationTitle("分析")
+            .sheet(isPresented: $showingAddGoalSheet) {
+                SimplifiedAddGoalView(goalViewModel: goalViewModel)
+            }
             .onAppear {
                 matchViewModel.fetchMatches()
                 practiceViewModel.fetchPractices()
+                goalViewModel.fetchGoals()
             }
         }
     }
 }
 
-// サマリーカード
-struct SimplifiedSummaryCard: View {
+// 活動サマリーカード
+struct ActivitySummaryCard: View {
     let matchCount: Int
     let practiceCount: Int
     let period: StatsPeriod
@@ -104,7 +174,7 @@ struct SimplifiedSummaryCard: View {
                 VStack {
                     Text("\(practiceCount)")
                         .font(.system(size: 32, weight: .bold))
-                        .foregroundColor(.green)
+                        .foregroundColor(AppDesign.primaryColor)
                     
                     Text("練習")
                         .font(.caption)
@@ -132,7 +202,7 @@ struct SimplifiedSummaryCard: View {
         }
         .padding()
         .background(Color(.systemBackground))
-        .cornerRadius(10)
+        .cornerRadius(12)
         .shadow(color: Color.black.opacity(0.05), radius: 5, x: 0, y: 2)
     }
     
@@ -152,7 +222,7 @@ struct SimplifiedSummaryCard: View {
 }
 
 // 試合統計カード
-struct SimplifiedMatchStatsCard: View {
+struct MatchStatsQuickCard: View {
     let totalGoals: Int
     let totalAssists: Int
     let averagePerformance: Double
@@ -225,13 +295,13 @@ struct SimplifiedMatchStatsCard: View {
         }
         .padding()
         .background(Color(.systemBackground))
-        .cornerRadius(10)
+        .cornerRadius(12)
         .shadow(color: Color.black.opacity(0.05), radius: 5, x: 0, y: 2)
     }
 }
 
 // 練習統計カード
-struct SimplifiedPracticeStatsCard: View {
+struct PracticeStatsQuickCard: View {
     let totalDuration: Int
     let averageIntensity: Double
     
@@ -239,7 +309,7 @@ struct SimplifiedPracticeStatsCard: View {
         VStack(alignment: .leading, spacing: 12) {
             HStack {
                 Image(systemName: "figure.walk")
-                    .foregroundColor(.green)
+                    .foregroundColor(AppDesign.primaryColor)
                 
                 Text("練習データ")
                     .font(.headline)
@@ -257,7 +327,7 @@ struct SimplifiedPracticeStatsCard: View {
                     Text(formattedDuration)
                         .font(.title2)
                         .fontWeight(.bold)
-                        .foregroundColor(.green)
+                        .foregroundColor(AppDesign.primaryColor)
                 }
                 
                 Divider()
@@ -274,13 +344,13 @@ struct SimplifiedPracticeStatsCard: View {
                     HStack(spacing: 4) {
                         ForEach(1...5, id: \.self) { i in
                             Circle()
-                                .fill(i <= Int(averageIntensity.rounded()) ? Color.green : Color.gray.opacity(0.3))
+                                .fill(i <= Int(averageIntensity.rounded()) ? AppDesign.primaryColor : Color.gray.opacity(0.3))
                                 .frame(width: 8, height: 8)
                         }
                         
                         Text(String(format: "%.1f", averageIntensity))
                             .font(.headline)
-                            .foregroundColor(.green)
+                            .foregroundColor(AppDesign.primaryColor)
                             .padding(.leading, 4)
                     }
                 }
@@ -288,7 +358,7 @@ struct SimplifiedPracticeStatsCard: View {
         }
         .padding()
         .background(Color(.systemBackground))
-        .cornerRadius(10)
+        .cornerRadius(12)
         .shadow(color: Color.black.opacity(0.05), radius: 5, x: 0, y: 2)
     }
     
@@ -305,141 +375,106 @@ struct SimplifiedPracticeStatsCard: View {
     }
 }
 
-// シンプル化された進捗チャート
-struct SimplifiedProgressChart: View {
-    let period: StatsPeriod
-    
-    // サンプルデータ（実際のアプリでは動的なデータを使用）
-    let performanceData = [7, 5, 8, 6, 9, 7]
+// コンパクトな目標カード
+struct CompactGoalCard: View {
+    let goal: NSManagedObject
     
     var body: some View {
-        VStack(alignment: .leading, spacing: 12) {
-            Text("パフォーマンス推移")
-                .font(.headline)
-            
-            // シンプルなチャート
-            GeometryReader { geometry in
-                VStack {
-                    // チャート本体
-                    ZStack(alignment: .leading) {
-                        // 水平線（目盛り）
-                        VStack(spacing: geometry.size.height / 4) {
-                            ForEach(0..<4) { i in
-                                Rectangle()
-                                    .fill(Color.gray.opacity(0.2))
-                                    .frame(height: 1)
-                            }
-                        }
-                        
-                        // データライン
-                        Path { path in
-                            let width = geometry.size.width
-                            let height = geometry.size.height
-                            let maxValue = 10.0 // 最大値
-                            let stepWidth = width / CGFloat(performanceData.count - 1)
-                            
-                            let points = performanceData.enumerated().map { (i, value) -> CGPoint in
-                                let x = CGFloat(i) * stepWidth
-                                let y = height - (CGFloat(value) / CGFloat(maxValue)) * height
-                                return CGPoint(x: x, y: y)
-                            }
-                            
-                            // パスを描画
-                            path.move(to: points[0])
-                            for i in 1..<points.count {
-                                path.addLine(to: points[i])
-                            }
-                        }
-                        .stroke(Color.blue, lineWidth: 2)
-                        
-                        // データポイント
-                        ForEach(0..<performanceData.count, id: \.self) { i in
-                            let width = geometry.size.width
-                            let height = geometry.size.height
-                            let maxValue = 10.0
-                            let stepWidth = width / CGFloat(performanceData.count - 1)
-                            
-                            let x = CGFloat(i) * stepWidth
-                            let y = height - (CGFloat(performanceData[i]) / CGFloat(maxValue)) * height
-                            
-                            Circle()
-                                .fill(Color.white)
-                                .frame(width: 8, height: 8)
-                                .overlay(
-                                    Circle()
-                                        .stroke(Color.blue, lineWidth: 2)
-                                )
-                                .position(x: x, y: y)
-                        }
-                    }
-                    .padding(.bottom, 20)
-                    
-                    // X軸ラベル
-                    HStack {
-                        ForEach(getLabelsForPeriod(), id: \.self) { label in
-                            Text(label)
-                                .font(.caption)
-                                .foregroundColor(.secondary)
-                                .frame(maxWidth: .infinity)
-                        }
-                    }
+        VStack(alignment: .leading, spacing: 8) {
+            HStack {
+                Text(goal.value(forKey: "title") as? String ?? "")
+                    .font(.headline)
+                    .lineLimit(1)
+                
+                Spacer()
+                
+                // 完了/進行中アイコン
+                if goal.value(forKey: "isCompleted") as? Bool ?? false {
+                    Image(systemName: "checkmark.circle.fill")
+                        .foregroundColor(.green)
+                } else if let deadline = goal.value(forKey: "deadline") as? Date,
+                          let daysRemaining = Calendar.current.dateComponents([.day], from: Date(), to: deadline).day,
+                          daysRemaining < 7 {
+                    Image(systemName: "exclamationmark.circle")
+                        .foregroundColor(.red)
+                } else {
+                    Image(systemName: "clock")
+                        .foregroundColor(.blue)
                 }
             }
-            .padding(.top, 8)
+            
+            // 進捗バー
+            let progress = Double(goal.value(forKey: "progress") as? Int ?? 0) / 100.0
+            
+            ProgressView(value: progress)
+                .progressViewStyle(LinearProgressViewStyle(tint: progressColor(progress)))
+            
+            HStack {
+                Text("\(Int(progress * 100))%")
+                    .font(.caption)
+                    .foregroundColor(progressColor(progress))
+                
+                Spacer()
+                
+                if let deadline = goal.value(forKey: "deadline") as? Date {
+                    let formatter = DateFormatter()
+                    formatter.dateStyle = .short
+                    formatter.timeStyle = .none
+                    
+                    Text("期限: \(formatter.string(from: deadline))")
+                        .font(.caption)
+                        .foregroundColor(.secondary)
+                }
+            }
         }
         .padding()
-        .background(Color(.systemBackground))
-        .cornerRadius(10)
-        .shadow(color: Color.black.opacity(0.05), radius: 5, x: 0, y: 2)
+        .background(Color.gray.opacity(0.05))
+        .cornerRadius(8)
     }
     
-    // 期間に応じたラベル取得
-    private func getLabelsForPeriod() -> [String] {
-        switch period {
-               case .week:
-                   return ["月", "火", "水", "木", "金", "土"]
-               case .month:
-                   return ["1週", "2週", "3週", "4週", "5週", "6週"]
-               case .season:
-                   return ["4月", "5月", "6月", "7月", "8月", "9月"]
-               case .all:
-                   return ["前期", "中期", "後期", "次期", "来期", "将来"]
-               }
-           }
+    // 進捗に応じた色
+    private func progressColor(_ progress: Double) -> Color {
+        if progress < 0.3 {
+            return .red
+        } else if progress < 0.7 {
+            return .orange
+        } else {
+            return .green
         }
+    }
+}
 
-        func getSeasonDateRange() -> (start: Date, end: Date) {
-           let calendar = Calendar.current
-           let currentDate = Date()
-           let year = calendar.component(.year, from: currentDate)
-           
-           // 例: 4月1日から翌年3月31日までをシーズンとする（学校年度に合わせた例）
-           var startComponents = DateComponents()
-           startComponents.year = year
-           startComponents.month = 4
-           startComponents.day = 1
-           
-           var endComponents = DateComponents()
-           endComponents.year = year + 1
-           endComponents.month = 3
-           endComponents.day = 31
-           
-           let startDate = calendar.date(from: startComponents) ?? currentDate
-           let endDate = calendar.date(from: endComponents) ?? currentDate
-           
-           // 現在の日付が次のシーズンなら、1年前のシーズンを返す
-           if currentDate < startDate {
-               return (
-                   calendar.date(byAdding: .year, value: -1, to: startDate) ?? currentDate,
-                   calendar.date(byAdding: .year, value: -1, to: endDate) ?? currentDate
-               )
-           }
-           
-           return (startDate, endDate)
+// 目標一覧画面
+struct GoalsListView: View {
+    let goalViewModel: GoalViewModel
+    @State private var showingAddGoalSheet = false
+    
+    var body: some View {
+        List {
+            ForEach(goalViewModel.goals, id: \.self) { goal in
+                NavigationLink(destination: GoalDetailView(goal: goal, goalViewModel: goalViewModel)) {
+                    CompactGoalCard(goal: goal)
+                }
+            }
         }
+        .listStyle(PlainListStyle())
+        .navigationTitle("目標一覧")
+        .toolbar {
+            ToolbarItem(placement: .navigationBarTrailing) {
+                Button(action: {
+                    showingAddGoalSheet = true
+                }) {
+                    Image(systemName: "plus")
+                }
+            }
+        }
+        .sheet(isPresented: $showingAddGoalSheet) {
+            SimplifiedAddGoalView(goalViewModel: goalViewModel)
+        }
+    }
+}
 
-        // プレビュー
-        #Preview {
-           StatsView()
-               .environment(\.managedObjectContext, PersistenceController.preview.container.viewContext)
-        }
+#Preview {
+    AnalysisView()
+        .environment(\.managedObjectContext, PersistenceController.preview.container.viewContext)
+}

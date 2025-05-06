@@ -8,34 +8,42 @@ struct MainTabView: View {
     
     var body: some View {
         TabView(selection: $selectedTab) {
-            // 記録タブ（メインのホーム画面として機能）
-            RecordsHomeView()
+            // ホームタブ（カレンダー＋その日の記録）
+            HomeView()
                 .environment(\.managedObjectContext, viewContext)
                 .environmentObject(addSheetController)
                 .tabItem {
-                    Label("記録", systemImage: "calendar")
+                    Label("ホーム", systemImage: "house")
                 }
                 .tag(0)
             
-            // 目標タブ
-            GoalsView()
+            // 記録一覧タブ
+            RecordListView()
                 .environment(\.managedObjectContext, viewContext)
                 .tabItem {
-                    Label("目標", systemImage: "flag")
+                    Label("記録", systemImage: "list.bullet")
                 }
                 .tag(1)
             
-            // 統計タブ
-            StatsView()
+            // 分析タブ（統計＋目標を統合）
+            AnalysisView()
                 .environment(\.managedObjectContext, viewContext)
                 .tabItem {
-                    Label("統計", systemImage: "chart.bar")
+                    Label("分析", systemImage: "chart.bar")
                 }
                 .tag(2)
+            
+            // 設定タブ（新規追加）
+            SettingsView()
+                .environment(\.managedObjectContext, viewContext)
+                .tabItem {
+                    Label("設定", systemImage: "gear")
+                }
+                .tag(3)
         }
         .accentColor(AppDesign.primaryColor)
         .sheet(isPresented: $addSheetController.isShowingAddSheet) {
-            AddRecordView()
+            QuickAddView()
                 .environment(\.managedObjectContext, viewContext)
         }
     }
@@ -44,8 +52,10 @@ struct MainTabView: View {
 // 記録追加シートのコントローラー
 class AddSheetController: ObservableObject {
     @Published var isShowingAddSheet = false
+    @Published var preselectedDate: Date? = nil
     
-    func showAddSheet() {
+    func showAddSheet(for date: Date? = nil) {
+        self.preselectedDate = date
         isShowingAddSheet = true
     }
 }

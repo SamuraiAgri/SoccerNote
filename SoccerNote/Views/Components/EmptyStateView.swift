@@ -9,28 +9,35 @@ struct EmptyStateView: View {
     var buttonAction: (() -> Void)? = nil
     
     var body: some View {
-        VStack(spacing: AppDesign.Spacing.large) {
+        VStack(spacing: 20) {
             Image(systemName: icon)
                 .font(.system(size: 60))
-                .foregroundColor(AppDesign.secondaryText)
+                .foregroundColor(.gray.opacity(0.7))
             
             Text(title)
-                .font(.appHeadline())
+                .font(.headline)
+                .multilineTextAlignment(.center)
             
             Text(message)
-                .font(.appCaption())
+                .font(.subheadline)
+                .foregroundColor(.secondary)
                 .multilineTextAlignment(.center)
+                .padding(.horizontal)
             
             if let buttonTitle = buttonTitle, let buttonAction = buttonAction {
                 Button(action: buttonAction) {
                     Text(buttonTitle)
+                        .padding(.horizontal, 20)
+                        .padding(.vertical, 10)
+                        .background(AppDesign.primaryColor)
+                        .foregroundColor(.white)
+                        .cornerRadius(8)
                 }
-                .buttonStyle(PrimaryButtonStyle())
-                .padding(.horizontal, AppDesign.Spacing.large)
+                .padding(.top, 10)
             }
         }
         .padding()
-        .frame(maxWidth: .infinity)
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
     }
 }
 
