@@ -1,3 +1,4 @@
+// SoccerNote/ViewModels/MatchViewModel.swift
 import Foundation
 import CoreData
 import SwiftUI
@@ -77,14 +78,7 @@ class MatchViewModel: ObservableObject {
         }
         
         let backgroundContext = persistenceController.newBackgroundContext()
-        
-        guard let activityID = activity.objectID else {
-            DispatchQueue.main.async {
-                self.errorMessage = "活動データが不正です"
-                self.isLoading = false
-            }
-            return
-        }
+        let activityID = activity.objectID
         
         backgroundContext.perform {
             do {
@@ -124,14 +118,7 @@ class MatchViewModel: ObservableObject {
         errorMessage = nil
         
         let backgroundContext = persistenceController.newBackgroundContext()
-        
-        guard let matchID = match.objectID else {
-            DispatchQueue.main.async {
-                self.errorMessage = "試合データが不正です"
-                self.isLoading = false
-            }
-            return
-        }
+        let matchID = match.objectID
         
         backgroundContext.perform {
             do {
@@ -169,28 +156,5 @@ class MatchViewModel: ObservableObject {
         let averagePerformance = matches.isEmpty ? 0.0 : Double(totalPerformance) / Double(matches.count)
         
         return (totalGoals, totalAssists, averagePerformance)
-    }
-    func deleteActivity(_ activity: NSManagedObject) {
-        let backgroundContext = persistenceController.newBackgroundContext()
-        
-        // objectIDの非オプショナル性を考慮
-        let activityID = activity.objectID
-        
-        backgroundContext.perform {
-            do {
-                let activityToDelete = try backgroundContext.existingObject(with: activityID)
-                backgroundContext.delete(activityToDelete)
-                
-                try backgroundContext.save()
-                DispatchQueue.main.async {
-                    self.fetchActivities()
-                }
-            } catch {
-                DispatchQueue.main.async {
-                    self.errorMessage = "活動の削除に失敗しました: \(error.localizedDescription)"
-                }
-                print("活動の削除に失敗: \(error)")
-            }
-        }
     }
 }

@@ -1,3 +1,4 @@
+// SoccerNote/ViewModels/ActivityViewModel.swift
 import Foundation
 import CoreData
 import SwiftUI
@@ -89,9 +90,7 @@ class ActivityViewModel: ObservableObject {
                 try backgroundContext.save()
                 
                 // 保存に成功したら、メインコンテキストのオブジェクトを返す
-                if let objectID = activity.objectID {
-                    savedActivity = self.viewContext.object(with: objectID)
-                }
+                savedActivity = self.viewContext.object(with: activity.objectID)
                 
                 DispatchQueue.main.async {
                     self.fetchActivities()
@@ -109,30 +108,6 @@ class ActivityViewModel: ObservableObject {
     
     func deleteActivity(_ activity: NSManagedObject) {
         let backgroundContext = persistenceController.newBackgroundContext()
-        
-        guard let id = activity.objectID else { return }
-        
-        backgroundContext.perform {
-            guard let activityToDelete = try? backgroundContext.existingObject(with: id) else { return }
-            backgroundContext.delete(activityToDelete)
-            
-            do {
-                try backgroundContext.save()
-                DispatchQueue.main.async {
-                    self.fetchActivities()
-                }
-            } catch {
-                DispatchQueue.main.async {
-                    self.errorMessage = "活動の削除に失敗しました: \(error.localizedDescription)"
-                }
-                print("活動の削除に失敗: \(error)")
-            }
-        }
-    }
-    func deleteActivity(_ activity: NSManagedObject) {
-        let backgroundContext = persistenceController.newBackgroundContext()
-        
-        // objectIDの非オプショナル性を考慮
         let activityID = activity.objectID
         
         backgroundContext.perform {
