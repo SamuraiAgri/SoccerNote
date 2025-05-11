@@ -26,16 +26,17 @@ struct CalendarView: View {
                     }
                 }) {
                     Image(systemName: "chevron.left")
-                        .foregroundColor(AppDesign.primaryColor)
-                        .padding(8)
-                        .background(Color.gray.opacity(0.1))
-                        .cornerRadius(8)
+                        .foregroundColor(Color.appPrimary)
+                        .padding(10)
+                        .background(Color.appPrimary.opacity(0.1))
+                        .cornerRadius(10)
                 }
                 
                 Spacer()
                 
                 Text(monthYearText)
-                    .font(.headline)
+                    .font(.title3)
+                    .fontWeight(.bold)
                     .foregroundColor(.primary)
                 
                 Spacer()
@@ -46,21 +47,25 @@ struct CalendarView: View {
                     }
                 }) {
                     Image(systemName: "chevron.right")
-                        .foregroundColor(AppDesign.primaryColor)
-                        .padding(8)
-                        .background(Color.gray.opacity(0.1))
-                        .cornerRadius(8)
+                        .foregroundColor(Color.appPrimary)
+                        .padding(10)
+                        .background(Color.appPrimary.opacity(0.1))
+                        .cornerRadius(10)
                 }
             }
-            .padding(.horizontal, 4)
+            .padding(.horizontal, 8)
             
             // 曜日ヘッダー
             HStack {
                 ForEach(["日", "月", "火", "水", "木", "金", "土"], id: \.self) { day in
                     Text(day)
-                        .font(.caption)
+                        .font(.subheadline)
+                        .fontWeight(.medium)
                         .frame(maxWidth: .infinity)
-                        .foregroundColor(day == "日" ? .red : (day == "土" ? .blue : .primary))
+                        .foregroundColor(
+                            day == "日" ? .red :
+                            (day == "土" ? Color.appAccent : .primary)
+                        )
                 }
             }
             .padding(.top, 8)
@@ -77,30 +82,48 @@ struct CalendarView: View {
                                 selectedDate = day.date
                             }
                         }) {
-                            VStack(spacing: 4) {
+                            ZStack {
+                                // 選択日のハイライト
+                                if Calendar.current.isDate(day.date, inSameDayAs: selectedDate) {
+                                    Circle()
+                                        .fill(Color.appPrimary)
+                                        .frame(width: 35, height: 35)
+                                } else if Calendar.current.isDateInToday(day.date) {
+                                    // 今日の日付はアウトライン
+                                    Circle()
+                                        .stroke(Color.appPrimary, lineWidth: 1.5)
+                                        .frame(width: 35, height: 35)
+                                }
+                                
                                 // 日付
                                 Text("\(Calendar.current.component(.day, from: day.date))")
                                     .font(.system(size: 16))
-                                    .fontWeight(Calendar.current.isDate(day.date, inSameDayAs: selectedDate) ? .bold : .regular)
+                                    .fontWeight(
+                                        Calendar.current.isDate(day.date, inSameDayAs: selectedDate) ?
+                                        .bold : .regular
+                                    )
                                     .foregroundColor(
-                                        Calendar.current.isDate(day.date, inSameDayAs: selectedDate) ? .white :
-                                            (Calendar.current.isDateInToday(day.date) ? AppDesign.primaryColor :
-                                                (Calendar.current.component(.weekday, from: day.date) == 1 ? .red :
-                                                    (Calendar.current.component(.weekday, from: day.date) == 7 ? .blue : .primary)))
+                                        Calendar.current.isDate(day.date, inSameDayAs: selectedDate) ?
+                                        .white :
+                                        (Calendar.current.isDateInToday(day.date) ?
+                                         Color.appPrimary :
+                                         (Calendar.current.component(.weekday, from: day.date) == 1 ?
+                                          .red :
+                                          (Calendar.current.component(.weekday, from: day.date) == 7 ?
+                                           Color.appAccent :
+                                           .primary)))
                                     )
                                 
                                 // アクティビティインジケーター - 実際のデータに基づいて表示
                                 if hasActivity(for: day.date) {
                                     Circle()
-                                        .fill(AppDesign.primaryColor.opacity(0.8))
+                                        .fill(
+                                            getActivityColor(for: day.date)
+                                        )
                                         .frame(width: 6, height: 6)
+                                        .offset(y: 12)
                                 }
                             }
-                            .frame(width: 35, height: 35)
-                            .background(
-                                Circle()
-                                    .fill(Calendar.current.isDate(day.date, inSameDayAs: selectedDate) ? AppDesign.primaryColor : Color.clear)
-                            )
                         }
                     }
                 }
@@ -108,8 +131,8 @@ struct CalendarView: View {
         }
         .padding()
         .background(Color(.systemBackground))
-        .cornerRadius(12)
-        .shadow(color: Color.black.opacity(0.05), radius: 5, x: 0, y: 2)
+        .cornerRadius(16)
+        .shadow(color: Color.appShadow, radius: 5, x: 0, y: 2)
         .gesture(
             DragGesture()
                 .updating($dragOffset) { value, state, _ in
@@ -180,5 +203,44 @@ struct CalendarView: View {
             guard let activityDate = activity.value(forKey: "date") as? Date else { return false }
             return calendar.isDate(activityDate, inSameDayAs: date)
         }
+    }
+    
+    // 日付のアクティビティタイプに基づいた色を取得
+    private func getActivityColor(for date: Date) -> Color {
+        let calendar = Calendar.current
+        let matchTypes = activityViewModel.activities.filter { activity in
+            guard let activityDate = activity.value(forKey: "date") as? Date,
+                  let type = activity.value(forKey: "type") as? String else { return false }
+            return calendar.isDate(activityDate, inSameDayAs: date) && type == "match"
+        }
+        
+        let practiceTypes = activityViewModel.activities.filter { activity in
+            guard let activityDate = activity.value(forKey: "date") as? Date,
+                  let type = activity.value(forKey: "type") as? String else { return false }
+            return calendar.isDate(activityDate, inSameDayAs: date) && type == "practice"
+        }
+        
+        if !matchTypes.isEmpty && !practiceTypes.isEmpty {
+            // 試合と練習の両方がある場合は紫色
+            return Color.purple
+        } else if !matchTypes.isEmpty {
+            // 試合のみの場合はオレンジ
+            return Color.appSecondary
+        } else {
+            // 練習のみの場合は緑
+            return Color.appPrimary
+        }
+    }
+}
+
+struct CalendarView_Previews: PreviewProvider {
+    static var previews: some View {
+        CalendarView(
+            selectedDate: .constant(Date()),
+            activityViewModel: ActivityViewModel(viewContext: PersistenceController.preview.container.viewContext)
+        )
+        .frame(height: 380)
+        .padding()
+        .previewLayout(.sizeThatFits)
     }
 }

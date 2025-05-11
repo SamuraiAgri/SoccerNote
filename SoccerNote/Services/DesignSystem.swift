@@ -3,7 +3,7 @@ import SwiftUI
 
 // アプリのデザインガイド
 struct AppDesign {
-    // メインカラー - アセットではなくExtensionから取得
+    // メインカラー - カラー拡張から取得
     static let primaryColor = Color.appPrimary
     static let secondaryColor = Color.appSecondary
     static let accentColor = Color.appAccent

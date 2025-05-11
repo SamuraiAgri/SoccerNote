@@ -23,8 +23,8 @@ struct RecordsHomeView: View {
         NavigationView {
             ZStack {
                 VStack(spacing: 0) {
-                    // カレンダービュー - 引数エラーを修正
-                    CalendarView(selectedDate: $selectedDate)
+                    // カレンダービュー - activityViewModelを渡す
+                    CalendarView(selectedDate: $selectedDate, activityViewModel: activityViewModel)
                         .frame(height: 350)
                         .padding(.top)
                         .padding(.horizontal)
@@ -42,7 +42,7 @@ struct RecordsHomeView: View {
                         }) {
                             Label("フィルター", systemImage: "line.3.horizontal.decrease.circle")
                                 .font(.subheadline)
-                                .foregroundColor(AppDesign.primaryColor)
+                                .foregroundColor(Color.appPrimary)
                         }
                     }
                     .padding()
@@ -58,7 +58,7 @@ struct RecordsHomeView: View {
                                     .font(.subheadline)
                                     .padding(.horizontal, 12)
                                     .padding(.vertical, 6)
-                                    .background(selectedFilter == nil ? AppDesign.primaryColor : Color.gray.opacity(0.2))
+                                    .background(selectedFilter == nil ? Color.appPrimary : Color.gray.opacity(0.2))
                                     .foregroundColor(selectedFilter == nil ? .white : .primary)
                                     .cornerRadius(15)
                             }
@@ -71,7 +71,7 @@ struct RecordsHomeView: View {
                                         .font(.subheadline)
                                         .padding(.horizontal, 12)
                                         .padding(.vertical, 6)
-                                        .background(selectedFilter == type ? AppDesign.primaryColor : Color.gray.opacity(0.2))
+                                        .background(selectedFilter == type ? Color.appPrimary : Color.gray.opacity(0.2))
                                         .foregroundColor(selectedFilter == type ? .white : .primary)
                                         .cornerRadius(15)
                                 }
@@ -90,45 +90,27 @@ struct RecordsHomeView: View {
                         LoadingView()
                         Spacer()
                     } else if activitiesForSelectedDate.isEmpty {
-                        VStack(spacing: 15) {
-                            Spacer()
-                            
-                            Image(systemName: "note.text")
-                                .font(.system(size: 50))
-                                .foregroundColor(.gray)
-                            
-                            Text("この日の記録はありません")
-                                .font(.headline)
-                            
-                            Button(action: {
-                                addSheetController.isShowingAddSheet = true
-                            }) {
-                                HStack {
-                                    Image(systemName: "plus")
-                                    Text("記録を追加")
-                                }
-                                .padding(.horizontal, 20)
-                                .padding(.vertical, 10)
-                                .background(AppDesign.primaryColor)
-                                .foregroundColor(.white)
-                                .cornerRadius(20)
+                        EmptyStateView(
+                            title: "この日の記録はありません",
+                            message: "タップして新しい記録を追加しましょう",
+                            icon: "note.text",
+                            buttonTitle: "記録を追加",
+                            buttonAction: {
+                                addSheetController.showAddSheet(for: selectedDate)
                             }
-                            
-                            Spacer()
-                        }
-                        .padding()
+                        )
+                        .padding(.top, 30)
                     } else {
                         List {
                             ForEach(activitiesForSelectedDate, id: \.self) { activity in
                                 NavigationLink(destination: ActivityDetailView(activity: activity)) {
-                                    ActivityRow(activity: activity)
+                                    ActivityRowCard(activity: activity)
                                 }
                             }
                             .onDelete(perform: deleteActivity)
                         }
                         .listStyle(PlainListStyle())
                         .refreshable {
-                            // Pull to refresh
                             activityViewModel.fetchActivities()
                         }
                     }
@@ -147,34 +129,29 @@ struct RecordsHomeView: View {
                     }
                 }
             }
-            .navigationTitle("サッカー記録帳")
+            .navigationTitle("サッカーノート")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .navigationBarTrailing) {
                     Button(action: {
-                        addSheetController.isShowingAddSheet = true
+                        addSheetController.showAddSheet(for: selectedDate)
                     }) {
-                        Image(systemName: "plus")
+                        Image(systemName: "plus.circle.fill")
+                            .font(.title3)
+                            .foregroundColor(Color.appPrimary)
                     }
                 }
             }
-            .sheet(isPresented: $addSheetController.isShowingAddSheet) {
-                QuickAddView(date: selectedDate)
-                    .environment(\.managedObjectContext, viewContext)
+            .onAppear {
+                activityViewModel.fetchActivities()
             }
-            .onChange(of: activityViewModel.errorMessage) { _, newValue in
-                showingErrorBanner = newValue != nil
-            }
-        }
-        .onAppear {
-            activityViewModel.fetchActivities()
         }
     }
     
     // 選択された日付のフォーマット
     private var formattedSelectedDate: String {
         let formatter = DateFormatter()
-        formatter.dateStyle = .long
+        formatter.dateStyle = .medium
         formatter.timeStyle = .none
         formatter.locale = Locale(identifier: "ja_JP")
         return formatter.string(from: selectedDate)
@@ -204,9 +181,16 @@ struct RecordsHomeView: View {
     private func deleteActivity(at offsets: IndexSet) {
         let activitiesToDelete = offsets.map { activitiesForSelectedDate[$0] }
         
-        // 確認ダイアログを表示（実際のアプリではここにアラートを追加するとよい）
         for activity in activitiesToDelete {
             activityViewModel.deleteActivity(activity)
         }
+    }
+}
+
+struct RecordsHomeView_Previews: PreviewProvider {
+    static var previews: some View {
+        RecordsHomeView()
+            .environment(\.managedObjectContext, PersistenceController.preview.container.viewContext)
+            .environmentObject(AddSheetController())
     }
 }

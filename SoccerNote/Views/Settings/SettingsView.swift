@@ -3,10 +3,11 @@ import SwiftUI
 import CoreData
 
 struct SettingsView: View {
+    // プレイヤー情報は残すが、オプション扱いに
+    @AppStorage("playerInfoEnabled") private var playerInfoEnabled: Bool = false
     @AppStorage("userName") private var userName: String = ""
     @AppStorage("teamName") private var teamName: String = ""
     @AppStorage("position") private var position: String = ""
-    @AppStorage("darkModeOn") private var darkModeOn: Bool = false
     
     // リマインダー設定
     @AppStorage("defaultReminderEnabled") private var defaultReminderEnabled: Bool = false
@@ -15,84 +16,129 @@ struct SettingsView: View {
     
     @State private var showingConfirmation = false
     @State private var confirmationMessage = ""
+    @State private var showingReminders = false
     
     @Environment(\.managedObjectContext) private var viewContext
     
     var body: some View {
         NavigationView {
             Form {
-                // ユーザー情報セクション
-                Section(header: Text("プレイヤー情報")) {
-                    TextField("名前", text: $userName)
-                    TextField("チーム名", text: $teamName)
-                    TextField("ポジション", text: $position)
+                // プレイヤー情報（オプション）
+                Section {
+                    Toggle(isOn: $playerInfoEnabled) {
+                        HStack {
+                            Image(systemName: "person.fill")
+                                .foregroundColor(Color.appPrimary)
+                                .font(.headline)
+                            Text("プレイヤー情報を記録")
+                        }
+                    }
+                    .toggleStyle(SwitchToggleStyle(tint: Color.appPrimary))
+                    
+                    if playerInfoEnabled {
+                        HStack {
+                            Image(systemName: "person")
+                                .foregroundColor(.secondary)
+                                .frame(width: 25)
+                            TextField("名前", text: $userName)
+                        }
+                        
+                        HStack {
+                            Image(systemName: "shield")
+                                .foregroundColor(.secondary)
+                                .frame(width: 25)
+                            TextField("チーム名", text: $teamName)
+                        }
+                        
+                        HStack {
+                            Image(systemName: "figure.soccer")
+                                .foregroundColor(.secondary)
+                                .frame(width: 25)
+                            TextField("ポジション", text: $position)
+                        }
+                    }
+                } header: {
+                    Text("プロフィール")
+                } footer: {
+                    if playerInfoEnabled {
+                        Text("個人の情報を記録することで、将来の分析に役立ちます")
+                            .font(.caption)
+                            .foregroundColor(.secondary)
+                    }
                 }
                 
-                // リマインダー設定（追加）
-                Section(header: Text("リマインダー設定")) {
-                    Toggle("デフォルトでリマインダーを設定", isOn: $defaultReminderEnabled)
+                // リマインダー設定
+                Section {
+                    Toggle(isOn: $defaultReminderEnabled) {
+                        HStack {
+                            Image(systemName: "bell.fill")
+                                .foregroundColor(Color.appSecondary)
+                                .font(.headline)
+                            Text("デフォルトでリマインダーを設定")
+                        }
+                    }
+                    .toggleStyle(SwitchToggleStyle(tint: Color.appSecondary))
                     
                     if defaultReminderEnabled {
-                        VStack(alignment: .leading) {
-                            Text("試合前リマインダー: \(matchReminderHours)時間前")
+                        VStack(alignment: .leading, spacing: 8) {
+                            HStack {
+                                Text("試合前リマインダー")
+                                Spacer()
+                                Text("\(matchReminderHours)時間前")
+                                    .foregroundColor(Color.appSecondary)
+                                    .fontWeight(.semibold)
+                            }
+                            
                             Slider(value: Binding(
                                 get: { Double(matchReminderHours) },
                                 set: { matchReminderHours = Int($0) }
                             ), in: 1...72, step: 1)
-                            .accentColor(AppDesign.secondaryColor)
+                            .accentColor(Color.appSecondary)
                         }
+                        .padding(.vertical, 4)
                         
-                        VStack(alignment: .leading) {
-                            Text("練習前リマインダー: \(practiceReminderHours)時間前")
+                        VStack(alignment: .leading, spacing: 8) {
+                            HStack {
+                                Text("練習前リマインダー")
+                                Spacer()
+                                Text("\(practiceReminderHours)時間前")
+                                    .foregroundColor(Color.appPrimary)
+                                    .fontWeight(.semibold)
+                            }
+                            
                             Slider(value: Binding(
                                 get: { Double(practiceReminderHours) },
                                 set: { practiceReminderHours = Int($0) }
                             ), in: 1...24, step: 1)
-                            .accentColor(AppDesign.primaryColor)
+                            .accentColor(Color.appPrimary)
+                        }
+                        .padding(.vertical, 4)
+                    }
+                    
+                    Button(action: {
+                        showingReminders = true
+                    }) {
+                        HStack {
+                            Image(systemName: "list.bullet.clipboard")
+                                .foregroundColor(Color.appAccent)
+                            Text("リマインダー管理")
+                                .foregroundColor(.primary)
+                            Spacer()
+                            Image(systemName: "chevron.right")
+                                .font(.caption)
+                                .foregroundColor(.gray)
                         }
                     }
-                    
-                    NavigationLink(destination: RemindersListView()) {
-                        Text("リマインダー管理")
-                    }
+                } header: {
+                    Text("リマインダー設定")
                 }
                 
-                // アプリ設定セクション
-                Section(header: Text("アプリ設定")) {
-                    Toggle("ダークモード", isOn: $darkModeOn)
-                        .onChange(of: darkModeOn) { _, newValue in
-                            applyTheme(darkMode: newValue)
-                        }
-                }
-                
-                // データ管理セクション
-                Section(header: Text("データ管理")) {
-                    Button(action: {
-                        confirmationMessage = "エクスポート機能は将来のアップデートで実装予定です。"
-                        showingConfirmation = true
-                    }) {
-                        Label("データのエクスポート", systemImage: "square.and.arrow.up")
-                    }
-                    
-                    Button(action: {
-                        confirmationMessage = "インポート機能は将来のアップデートで実装予定です。"
-                        showingConfirmation = true
-                    }) {
-                        Label("データのインポート", systemImage: "square.and.arrow.down")
-                    }
-                    
-                    Button(action: {
-                        confirmationMessage = "すべてのデータを削除してもよろしいですか？この操作は元に戻せません。"
-                        showingConfirmation = true
-                    }) {
-                        Label("データをリセット", systemImage: "trash")
-                            .foregroundColor(.red)
-                    }
-                }
-                
-                // アプリ情報セクション
-                Section(header: Text("アプリ情報")) {
+                // アプリ情報セクション - ダークモードを削除
+                Section {
                     HStack {
+                        Image(systemName: "info.circle")
+                            .foregroundColor(Color.appAccent)
+                            .frame(width: 25)
                         Text("バージョン")
                         Spacer()
                         Text("1.0.0")
@@ -100,18 +146,37 @@ struct SettingsView: View {
                     }
                     
                     Button(action: {
-                        confirmationMessage = "評価機能は将来のアップデートで実装予定です。"
-                        showingConfirmation = true
+                        // レビュー画面への導線（実装時に追加）
                     }) {
-                        Label("アプリを評価する", systemImage: "star")
+                        HStack {
+                            Image(systemName: "star.fill")
+                                .foregroundColor(Color.appSecondary)
+                                .frame(width: 25)
+                            Text("アプリを評価する")
+                                .foregroundColor(.primary)
+                        }
                     }
-                    
-                    Button(action: {
-                        confirmationMessage = "お問い合わせ機能は将来のアップデートで実装予定です。"
-                        showingConfirmation = true
-                    }) {
-                        Label("お問い合わせ", systemImage: "envelope")
+                } header: {
+                    Text("アプリ情報")
+                }
+                
+                // データ管理セクション
+                Section {
+                    Button(action: resetConfirmation) {
+                        HStack {
+                            Image(systemName: "trash")
+                                .foregroundColor(Color.appError)
+                                .frame(width: 25)
+                            Text("すべてのデータをリセット")
+                                .foregroundColor(Color.appError)
+                        }
                     }
+                } header: {
+                    Text("データ管理")
+                } footer: {
+                    Text("すべてのデータを削除します。この操作は元に戻せません。")
+                        .font(.caption)
+                        .foregroundColor(.secondary)
                 }
             }
             .navigationTitle("設定")
@@ -119,21 +184,24 @@ struct SettingsView: View {
                 Alert(
                     title: Text("確認"),
                     message: Text(confirmationMessage),
-                    primaryButton: .cancel(Text("キャンセル")),
-                    secondaryButton: .destructive(Text("OK")) {
-                        if confirmationMessage.contains("データをリセット") {
-                            resetAllData()
-                        }
-                    }
+                    primaryButton: .destructive(Text("リセット")) {
+                        resetAllData()
+                    },
+                    secondaryButton: .cancel(Text("キャンセル"))
                 )
+            }
+            .sheet(isPresented: $showingReminders) {
+                NavigationView {
+                    RemindersListView()
+                }
             }
         }
     }
     
-    // ダークモード適用
-    private func applyTheme(darkMode: Bool) {
-        // システム設定に任せる場合はコメントアウト
-        // UIApplication.shared.windows.first?.overrideUserInterfaceStyle = darkMode ? .dark : .light
+    // リセット確認
+    private func resetConfirmation() {
+        confirmationMessage = "すべてのデータを削除してもよろしいですか？この操作は元に戻せません。"
+        showingConfirmation = true
     }
     
     // すべてのデータをリセット
@@ -166,6 +234,8 @@ struct SettingsView: View {
     }
 }
 
-#Preview {
-    SettingsView()
+struct SettingsView_Previews: PreviewProvider {
+    static var previews: some View {
+        SettingsView()
+    }
 }
