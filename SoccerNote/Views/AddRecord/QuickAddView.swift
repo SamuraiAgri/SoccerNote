@@ -45,7 +45,19 @@ struct QuickAddView: View {
         _matchViewModel = StateObject(wrappedValue: MatchViewModel(viewContext: context))
         _practiceViewModel = StateObject(wrappedValue: PracticeViewModel(viewContext: context))
         
-        let initialDate = date ?? Date()
+        // カレンダーから渡された日付、またはUserDefaultsの日付を優先
+        var initialDate: Date
+        
+        if let passedDate = date {
+            initialDate = passedDate
+        } else if let timestamp = UserDefaults.standard.object(forKey: "SelectedDateForNewRecord") as? TimeInterval {
+            initialDate = Date(timeIntervalSince1970: timestamp)
+            // 使用後は削除
+            UserDefaults.standard.removeObject(forKey: "SelectedDateForNewRecord")
+        } else {
+            initialDate = Date()
+        }
+        
         self._date = State(initialValue: initialDate)
         
         // リマインダー時間のデフォルト設定（1時間前）
@@ -220,7 +232,7 @@ struct QuickAddView: View {
                 .pickerStyle(SegmentedPickerStyle())
             }
             
-            // 日付選択
+            // 日付選択 - 日時が正確に保存されるよう修正
             VStack(alignment: .leading) {
                 Text("日時")
                     .font(.headline)
@@ -230,6 +242,7 @@ struct QuickAddView: View {
                     .padding(12)
                     .background(Color.gray.opacity(0.1))
                     .cornerRadius(8)
+                    .environment(\.calendar, Calendar.current)
             }
             
             // 場所入力
@@ -290,6 +303,7 @@ struct QuickAddView: View {
                         .padding(12)
                         .background(Color.gray.opacity(0.1))
                         .cornerRadius(8)
+                        .environment(\.calendar, Calendar.current)
                 }
             }
         }
@@ -482,7 +496,7 @@ struct QuickAddView: View {
         }
     }
     
-    // 記録保存処理（修正版）
+    // 記録保存処理（修正版）- 選択した日付をそのまま保存するよう修正
     private func saveRecord() {
         isLoading = true
         
@@ -492,31 +506,31 @@ struct QuickAddView: View {
         backgroundContext.perform {
             // 活動エンティティの作成
             let activity = NSEntityDescription.insertNewObject(forEntityName: "Activity", into: backgroundContext)
-            activity.setValue(self.date, forKey: "date")
+            activity.setValue(UUID(), forKey: "id")
+            activity.setValue(self.date, forKey: "date") // 選択した日付をそのまま保存
             activity.setValue(self.selectedType.rawValue, forKey: "type")
             activity.setValue(self.location, forKey: "location")
             activity.setValue(self.notes, forKey: "notes")
             activity.setValue(self.rating, forKey: "rating")
-            activity.setValue(UUID(), forKey: "id")
             
             // 試合か練習かによって詳細情報を保存
             if self.selectedType == .match {
                 let match = NSEntityDescription.insertNewObject(forEntityName: "Match", into: backgroundContext)
+                match.setValue(UUID(), forKey: "id")
                 match.setValue(self.opponent, forKey: "opponent")
                 match.setValue(self.score, forKey: "score")
                 match.setValue(self.goalsScored, forKey: "goalsScored")
                 match.setValue(self.assists, forKey: "assists")
                 match.setValue(90, forKey: "playingTime") // デフォルト値
                 match.setValue(5, forKey: "performance") // デフォルト値
-                match.setValue(UUID(), forKey: "id")
                 match.setValue(activity, forKey: "activity")
             } else {
                 let practice = NSEntityDescription.insertNewObject(forEntityName: "Practice", into: backgroundContext)
+                practice.setValue(UUID(), forKey: "id")
                 practice.setValue(self.focus, forKey: "focus")
                 practice.setValue(self.duration, forKey: "duration")
                 practice.setValue(self.intensity, forKey: "intensity")
                 practice.setValue("", forKey: "learnings")
-                practice.setValue(UUID(), forKey: "id")
                 practice.setValue(activity, forKey: "activity")
             }
             

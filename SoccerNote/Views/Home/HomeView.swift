@@ -6,8 +6,11 @@ struct HomeView: View {
     @Environment(\.managedObjectContext) private var viewContext
     @StateObject private var activityViewModel = ActivityViewModel(viewContext: PersistenceController.shared.container.viewContext)
     
+    // タブ選択マネージャーを環境オブジェクトとして取得
+    @EnvironmentObject private var tabSelectionManager: TabSelectionManager
+    
+    // 選択された日付
     @State private var selectedDate = Date()
-    @State private var selectedTab = 1 // タブ参照用
     
     var body: some View {
         NavigationView {
@@ -16,6 +19,7 @@ struct HomeView: View {
                     // 月間カレンダー
                     CalendarView(selectedDate: $selectedDate, activityViewModel: activityViewModel)
                         .frame(height: 320)
+                        .padding(.top)
                         .padding(.horizontal)
                     
                     // 選択日の記録
@@ -38,8 +42,11 @@ struct HomeView: View {
                                     .foregroundColor(.secondary)
                                 
                                 Button(action: {
-                                    // TabViewの切り替え（外部から制御）
-                                    NotificationCenter.default.post(name: Notification.Name("SwitchToTab"), object: nil, userInfo: ["tab": 1])
+                                    // タブを記録タブ(インデックス1)に切り替え
+                                    tabSelectionManager.selectedTab = 1
+                                    
+                                    // 選択された日付を保存（記録追加画面で使用するため）
+                                    UserDefaults.standard.set(selectedDate.timeIntervalSince1970, forKey: "SelectedDateForNewRecord")
                                 }) {
                                     Text("記録を追加")
                                         .font(.subheadline)
@@ -123,5 +130,6 @@ struct HomeView_Previews: PreviewProvider {
     static var previews: some View {
         HomeView()
             .environment(\.managedObjectContext, PersistenceController.preview.container.viewContext)
+            .environmentObject(TabSelectionManager())
     }
 }

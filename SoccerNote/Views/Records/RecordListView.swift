@@ -42,13 +42,31 @@ struct RecordListView: View {
                     // フィルターボタン
                     ScrollView(.horizontal, showsIndicators: false) {
                         HStack {
-                            FilterButton(title: "すべて", isSelected: selectedFilter == nil) {
-                                selectedFilter = nil
+                            Button(action: {
+                                withAnimation {
+                                    selectedFilter = nil
+                                }
+                            }) {
+                                Text("すべて")
+                                    .padding(.horizontal, 15)
+                                    .padding(.vertical, 8)
+                                    .background(selectedFilter == nil ? AppDesign.primaryColor : AppDesign.secondaryBackground)
+                                    .foregroundColor(selectedFilter == nil ? .white : AppDesign.primaryText)
+                                    .cornerRadius(20)
                             }
                             
                             ForEach(ActivityType.allCases) { type in
-                                FilterButton(title: type.rawValue, isSelected: selectedFilter == type) {
-                                    selectedFilter = type
+                                Button(action: {
+                                    withAnimation {
+                                        selectedFilter = type
+                                    }
+                                }) {
+                                    Text(type.rawValue)
+                                        .padding(.horizontal, 15)
+                                        .padding(.vertical, 8)
+                                        .background(selectedFilter == type ? AppDesign.primaryColor : AppDesign.secondaryBackground)
+                                        .foregroundColor(selectedFilter == type ? .white : AppDesign.primaryText)
+                                        .cornerRadius(20)
                                 }
                             }
                         }
@@ -67,8 +85,13 @@ struct RecordListView: View {
                         icon: "note.text",
                         buttonTitle: "記録を追加",
                         buttonAction: {
-                            // タブインデックスを「追加」タブに変更するアクション
-                            // 実際の実装ではタブインデックスを変更する方法を追加する必要があります
+                            // タブを「追加」タブに切り替える処理
+                            // MainTabViewのタブ選択を制御する仕組みが必要
+                            if let window = UIApplication.shared.windows.first {
+                                if let tabBarController = window.rootViewController as? UITabBarController {
+                                    tabBarController.selectedIndex = 1
+                                }
+                            }
                         }
                     )
                     .padding(.top, 50)

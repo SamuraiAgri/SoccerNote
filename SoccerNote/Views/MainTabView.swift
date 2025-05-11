@@ -1,15 +1,21 @@
 // MainTabView.swift
 import SwiftUI
 
+// タブ選択を管理するクラス
+class TabSelectionManager: ObservableObject {
+    @Published var selectedTab = 0
+}
+
 struct MainTabView: View {
     @Environment(\.managedObjectContext) private var viewContext
-    @State private var selectedTab = 0
+    @StateObject private var tabSelectionManager = TabSelectionManager()
     
     var body: some View {
-        TabView(selection: $selectedTab) {
+        TabView(selection: $tabSelectionManager.selectedTab) {
             // 1. ホームタブ
             HomeView()
                 .environment(\.managedObjectContext, viewContext)
+                .environmentObject(tabSelectionManager)
                 .tabItem {
                     Label("ホーム", systemImage: "house.fill")
                 }

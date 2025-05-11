@@ -133,33 +133,6 @@ struct SettingsView: View {
                     Text("リマインダー設定")
                 }
                 
-                // アプリ情報セクション - ダークモードを削除
-                Section {
-                    HStack {
-                        Image(systemName: "info.circle")
-                            .foregroundColor(Color.appAccent)
-                            .frame(width: 25)
-                        Text("バージョン")
-                        Spacer()
-                        Text("1.0.0")
-                            .foregroundColor(.secondary)
-                    }
-                    
-                    Button(action: {
-                        // レビュー画面への導線（実装時に追加）
-                    }) {
-                        HStack {
-                            Image(systemName: "star.fill")
-                                .foregroundColor(Color.appSecondary)
-                                .frame(width: 25)
-                            Text("アプリを評価する")
-                                .foregroundColor(.primary)
-                        }
-                    }
-                } header: {
-                    Text("アプリ情報")
-                }
-                
                 // データ管理セクション
                 Section {
                     Button(action: resetConfirmation) {

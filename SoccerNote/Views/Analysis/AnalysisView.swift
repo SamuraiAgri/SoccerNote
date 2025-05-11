@@ -63,12 +63,10 @@ struct AnalysisView: View {
                             )
                             .padding(.horizontal)
                             
-                            PerformanceChartCard(
-                                period: selectedPeriod,
-                                performanceData: [7, 5, 8, 6, 9, 7] // サンプルデータ
-                            )
-                            .frame(height: 250)
-                            .padding(.horizontal)
+                            // パフォーマンス推移チャート - サンプルデータを削除
+                            PerformanceChartCard(period: selectedPeriod)
+                                .frame(height: 250)
+                                .padding(.horizontal)
                         }
                         .padding(.bottom)
                     }
@@ -155,8 +153,6 @@ struct AnalysisView: View {
         }
     }
 }
-
-// ActivitySummaryCardの定義を削除 (ActivitySummaryCard.swiftに移動)
 
 struct AnalysisView_Previews: PreviewProvider {
     static var previews: some View {
