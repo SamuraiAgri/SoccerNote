@@ -20,6 +20,7 @@ struct EditMatchView: View {
     @State private var performance: Int
     
     @State private var showingConfirmation = false
+    @State private var toast: ToastData?
     
     init(activity: NSManagedObject) {
         self.activity = activity
@@ -88,6 +89,7 @@ struct EditMatchView: View {
                 // 保存ボタン
                 Section {
                     Button(action: {
+                        HapticFeedback.medium()
                         updateRecord()
                     }) {
                         Text("変更を保存")
@@ -102,8 +104,10 @@ struct EditMatchView: View {
             }
             .navigationTitle("試合記録編集")
             .navigationBarItems(trailing: Button("キャンセル") {
+                HapticFeedback.light()
                 presentationMode.wrappedValue.dismiss()
             })
+            .toast($toast)
             .alert(isPresented: $showingConfirmation) {
                 Alert(
                     title: Text("保存完了"),
@@ -142,8 +146,15 @@ struct EditMatchView: View {
         // 保存
         do {
             try viewContext.save()
-            showingConfirmation = true
+            HapticFeedback.success()
+            toast = ToastData(type: .success, message: "記録を更新しました")
+            
+            DispatchQueue.main.asyncAfter(deadline: .now() + 1.0) {
+                showingConfirmation = true
+            }
         } catch {
+            HapticFeedback.error()
+            toast = ToastData(type: .error, message: "更新に失敗しました")
             let nsError = error as NSError
             print("記録の更新に失敗: \(nsError)")
         }

@@ -8,6 +8,8 @@ struct GoalDetailView: View {
     @State private var isEditing = false
     @State private var progress: Double
     @State private var isCompleted: Bool
+    @State private var showingEditSheet = false
+    @State private var toast: ToastData?
     
     init(goal: NSManagedObject, goalViewModel: GoalViewModel) {
         self.goal = goal
@@ -63,6 +65,9 @@ struct GoalDetailView: View {
                         VStack {
                             Slider(value: $progress)
                                 .accentColor(AppDesign.primaryColor)
+                                .onChange(of: progress) { _, _ in
+                                    HapticFeedback.selection()
+                                }
                             
                             HStack {
                                 Text("0%")
@@ -76,6 +81,12 @@ struct GoalDetailView: View {
                             
                             Toggle("目標達成", isOn: $isCompleted)
                                 .toggleStyle(SwitchToggleStyle(tint: AppDesign.primaryColor))
+                                .onChange(of: isCompleted) { _, newValue in
+                                    HapticFeedback.light()
+                                    if newValue {
+                                        progress = 1.0
+                                    }
+                                }
                         }
                     } else {
                         ProgressView(value: progress)
@@ -114,12 +125,29 @@ struct GoalDetailView: View {
             .padding()
         }
         .navigationTitle("目標詳細")
+        .navigationBarItems(trailing: Button(action: {
+            HapticFeedback.light()
+            showingEditSheet = true
+        }) {
+            Text("編集")
+        })
+        .sheet(isPresented: $showingEditSheet) {
+            EditGoalView(goal: goal, goalViewModel: goalViewModel)
+        }
+        .toast($toast)
+        .onAppear {
+            // 目標データを再読み込み
+            progress = Double(goal.value(forKey: "progress") as? Int ?? 0) / 100.0
+            isCompleted = goal.value(forKey: "isCompleted") as? Bool ?? false
+        }
     }
     
     // 進捗更新
     private func updateProgress() {
+        HapticFeedback.medium()
         let progressValue = Int(progress * 100)
         goalViewModel.updateGoalProgress(goal, progress: progressValue, isCompleted: isCompleted)
+        toast = ToastData(type: .success, message: "進捗を更新しました")
     }
     
     // ヘルパープロパティ

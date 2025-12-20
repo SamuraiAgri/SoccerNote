@@ -26,6 +26,7 @@ struct SimpleRecordAddView: View {
     
     @State private var isLoading = false
     @State private var showSuccess = false
+    @State private var toast: ToastData?
     
     // イニシャライザでUserDefaultsから選択された日付を取得
     init() {
@@ -56,6 +57,7 @@ struct SimpleRecordAddView: View {
                         .pickerStyle(SegmentedPickerStyle())
                         // iOS 17用のonChange修正
                         .onChange(of: selectedType) { _, newValue in
+                            HapticFeedback.selection()
                             print("選択されたタイプ: \(newValue)")
                         }
                         
@@ -93,6 +95,7 @@ struct SimpleRecordAddView: View {
                                         .foregroundColor(index <= rating ? .yellow : .gray)
                                         .font(.system(size: 24))
                                         .onTapGesture {
+                                            HapticFeedback.selection()
                                             rating = index
                                         }
                                 }
@@ -300,7 +303,10 @@ struct SimpleRecordAddView: View {
                     }
                     
                     // 保存ボタン
-                    Button(action: saveRecord) {
+                    Button(action: {
+                        HapticFeedback.light()
+                        saveRecord()
+                    }) {
                         if isLoading {
                             ProgressView()
                                 .progressViewStyle(CircularProgressViewStyle())
@@ -326,6 +332,7 @@ struct SimpleRecordAddView: View {
                 .padding()
             }
             .navigationTitle("記録追加")
+            .toast($toast)
             .alert(isPresented: $showSuccess) {
                 Alert(
                     title: Text("保存完了"),
@@ -404,12 +411,20 @@ struct SimpleRecordAddView: View {
                     // メインスレッドで UI 更新
                     DispatchQueue.main.async {
                         isLoading = false
-                        showSuccess = true
+                        HapticFeedback.success()
+                        toast = ToastData(type: .success, message: "記録が保存されました")
+                        
+                        // 少し遅らせて画面を閉じる
+                        DispatchQueue.main.asyncAfter(deadline: .now() + 1.5) {
+                            presentationMode.wrappedValue.dismiss()
+                        }
                     }
                 } catch {
                     print("保存エラー: \(error)")
                     DispatchQueue.main.async {
                         isLoading = false
+                        HapticFeedback.error()
+                        toast = ToastData(type: .error, message: "保存に失敗しました")
                     }
                 }
             }

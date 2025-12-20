@@ -132,6 +132,62 @@ class GoalViewModel: ObservableObject {
         }
     }
     
+    // CRUD - Update: 目標の全フィールド更新
+    func updateGoal(_ goal: NSManagedObject, title: String, description: String, deadline: Date, progress: Int, isCompleted: Bool) {
+        isLoading = true
+        errorMessage = nil
+        
+        // 入力検証
+        let trimmedTitle = title.trimmingCharacters(in: .whitespacesAndNewlines)
+        
+        guard !trimmedTitle.isEmpty else {
+            DispatchQueue.main.async {
+                self.errorMessage = "タイトルは必須項目です"
+                self.isLoading = false
+            }
+            return
+        }
+        
+        let backgroundContext = persistenceController.newBackgroundContext()
+        let goalID = goal.objectID
+        
+        backgroundContext.perform {
+            do {
+                let goalToUpdate = try backgroundContext.existingObject(with: goalID)
+                
+                goalToUpdate.setValue(trimmedTitle, forKey: "title")
+                goalToUpdate.setValue(description, forKey: "goalDescription")
+                goalToUpdate.setValue(deadline, forKey: "deadline")
+                goalToUpdate.setValue(max(0, min(100, progress)), forKey: "progress")
+                goalToUpdate.setValue(isCompleted, forKey: "isCompleted")
+                
+                try backgroundContext.save()
+                
+                DispatchQueue.main.async {
+                    self.fetchGoals()
+                    self.isLoading = false
+                }
+            } catch {
+                DispatchQueue.main.async {
+                    self.errorMessage = "目標の更新に失敗しました: \(error.localizedDescription)"
+                    self.isLoading = false
+                }
+                print("目標の更新に失敗: \(error)")
+            }
+        }
+    }
+    
+    // 目標の達成/未達成を切り替え
+    func toggleGoalCompletion(_ goal: NSManagedObject) {
+        let isCurrentlyCompleted = goal.value(forKey: "isCompleted") as? Bool ?? false
+        let currentProgress = goal.value(forKey: "progress") as? Int ?? 0
+        
+        // 未完了→完了なら進捗を100%に、完了→未完了ならそのまま
+        let newProgress = !isCurrentlyCompleted ? 100 : currentProgress
+        
+        updateGoalProgress(goal, progress: newProgress, isCompleted: !isCurrentlyCompleted)
+    }
+    
     func deleteGoal(_ goal: NSManagedObject) {
         isLoading = true
         errorMessage = nil

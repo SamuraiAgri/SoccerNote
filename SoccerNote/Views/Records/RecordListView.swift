@@ -8,6 +8,15 @@ struct RecordListView: View {
     
     @State private var searchText = ""
     @State private var selectedFilter: ActivityType?
+    @State private var showingDeleteConfirmation = false
+    @State private var activityToDelete: NSManagedObject?
+    @State private var showingFilterSheet = false
+    
+    // 高度なフィルター
+    @State private var selectedRating: Int?
+    @State private var startDate: Date?
+    @State private var endDate: Date?
+    @State private var isUsingDateFilter = false
     
     init() {
         let context = PersistenceController.shared.container.viewContext
@@ -69,6 +78,21 @@ struct RecordListView: View {
                                         .cornerRadius(20)
                                 }
                             }
+                            
+                            // 詳細フィルターボタン
+                            Button(action: {
+                                showingFilterSheet = true
+                            }) {
+                                HStack(spacing: 4) {
+                                    Image(systemName: "line.3.horizontal.decrease.circle")
+                                    Text("詳細")
+                                }
+                                .padding(.horizontal, 15)
+                                .padding(.vertical, 8)
+                                .background(hasActiveFilters ? AppDesign.primaryColor : AppDesign.secondaryBackground)
+                                .foregroundColor(hasActiveFilters ? .white : AppDesign.primaryText)
+                                .cornerRadius(20)
+                            }
                         }
                         .padding(.vertical, 5)
                     }
@@ -103,8 +127,15 @@ struct RecordListView: View {
                             NavigationLink(destination: ActivityDetailView(activity: activity)) {
                                 ActivityRow(activity: activity)
                             }
+                            .swipeActions(edge: .trailing, allowsFullSwipe: false) {
+                                Button(role: .destructive) {
+                                    activityToDelete = activity
+                                    showingDeleteConfirmation = true
+                                } label: {
+                                    Label("削除", systemImage: "trash")
+                                }
+                            }
                         }
-                        .onDelete(perform: deleteActivities)
                     }
                     .listStyle(PlainListStyle())
                 }
@@ -115,7 +146,35 @@ struct RecordListView: View {
             .onAppear {
                 activityViewModel.fetchActivities()
             }
+            .alert("記録を削除", isPresented: $showingDeleteConfirmation) {
+                Button("キャンセル", role: .cancel) {
+                    activityToDelete = nil
+                }
+                Button("削除", role: .destructive) {
+                    if let activity = activityToDelete {
+                        withAnimation {
+                            activityViewModel.deleteActivity(activity)
+                        }
+                        activityToDelete = nil
+                    }
+                }
+            } message: {
+                Text("この記録を削除してもよろしいですか？この操作は取り消せません。")
+            }
+            .sheet(isPresented: $showingFilterSheet) {
+                AdvancedFilterSheet(
+                    selectedRating: $selectedRating,
+                    startDate: $startDate,
+                    endDate: $endDate,
+                    isUsingDateFilter: $isUsingDateFilter
+                )
+            }
         }
+    }
+    
+    // 詳細フィルターが有効かどうか
+    private var hasActiveFilters: Bool {
+        return selectedRating != nil || isUsingDateFilter
     }
     
     // フィルタリングされた活動リスト
@@ -141,14 +200,129 @@ struct RecordListView: View {
             }
         }
         
+        // 評価でフィルタリング
+        if let rating = selectedRating {
+            activities = activities.filter { activity in
+                let activityRating = activity.value(forKey: "rating") as? Int ?? 0
+                return activityRating == rating
+            }
+        }
+        
+        // 日付範囲でフィルタリング
+        if isUsingDateFilter {
+            activities = activities.filter { activity in
+                guard let date = activity.value(forKey: "date") as? Date else { return false }
+                
+                if let start = startDate, let end = endDate {
+                    return date >= start && date <= end
+                } else if let start = startDate {
+                    return date >= start
+                } else if let end = endDate {
+                    return date <= end
+                }
+                return true
+            }
+        }
+        
         return activities
     }
+}
+
+// 詳細フィルターシート
+struct AdvancedFilterSheet: View {
+    @Environment(\.presentationMode) var presentationMode
+    @Binding var selectedRating: Int?
+    @Binding var startDate: Date?
+    @Binding var endDate: Date?
+    @Binding var isUsingDateFilter: Bool
     
-    // 削除処理
-    private func deleteActivities(at offsets: IndexSet) {
-        for index in offsets {
-            let activity = filteredActivities[index]
-            activityViewModel.deleteActivity(activity)
+    @State private var tempStartDate: Date = Calendar.current.date(byAdding: .month, value: -1, to: Date()) ?? Date()
+    @State private var tempEndDate: Date = Date()
+    
+    var body: some View {
+        NavigationView {
+            Form {
+                Section(header: Text("評価フィルター")) {
+                    HStack {
+                        Text("評価")
+                        Spacer()
+                        
+                        ForEach(1...5, id: \.self) { rating in
+                            Button(action: {
+                                HapticFeedback.selection()
+                                if selectedRating == rating {
+                                    selectedRating = nil
+                                } else {
+                                    selectedRating = rating
+                                }
+                            }) {
+                                Image(systemName: selectedRating == rating ? "star.fill" : "star")
+                                    .foregroundColor(selectedRating == rating ? .yellow : .gray)
+                                    .font(.system(size: 24))
+                            }
+                        }
+                    }
+                    
+                    if selectedRating != nil {
+                        Button(action: {
+                            HapticFeedback.light()
+                            selectedRating = nil
+                        }) {
+                            Text("評価フィルターをクリア")
+                                .foregroundColor(.red)
+                        }
+                    }
+                }
+                
+                Section(header: Text("日付範囲フィルター")) {
+                    Toggle("日付範囲を指定", isOn: $isUsingDateFilter)
+                        .onChange(of: isUsingDateFilter) { _, newValue in
+                            if newValue {
+                                startDate = tempStartDate
+                                endDate = tempEndDate
+                            } else {
+                                startDate = nil
+                                endDate = nil
+                            }
+                        }
+                    
+                    if isUsingDateFilter {
+                        DatePicker("開始日", selection: $tempStartDate, displayedComponents: .date)
+                            .onChange(of: tempStartDate) { _, newValue in
+                                startDate = newValue
+                            }
+                        
+                        DatePicker("終了日", selection: $tempEndDate, displayedComponents: .date)
+                            .onChange(of: tempEndDate) { _, newValue in
+                                endDate = newValue
+                            }
+                    }
+                }
+                
+                Section {
+                    Button(action: {
+                        HapticFeedback.light()
+                        selectedRating = nil
+                        isUsingDateFilter = false
+                        startDate = nil
+                        endDate = nil
+                    }) {
+                        HStack {
+                            Spacer()
+                            Text("すべてのフィルターをクリア")
+                                .foregroundColor(.red)
+                            Spacer()
+                        }
+                    }
+                }
+            }
+            .navigationTitle("詳細フィルター")
+            .navigationBarItems(
+                trailing: Button("完了") {
+                    HapticFeedback.light()
+                    presentationMode.wrappedValue.dismiss()
+                }
+            )
         }
     }
 }

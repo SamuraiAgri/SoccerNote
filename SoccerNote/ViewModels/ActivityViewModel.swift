@@ -127,4 +127,65 @@ class ActivityViewModel: ObservableObject {
             }
         }
     }
+    
+    // CRUD - Update: 活動の更新
+    func updateActivity(_ activity: NSManagedObject, type: ActivityType, date: Date, location: String, notes: String, rating: Int) {
+        isLoading = true
+        errorMessage = nil
+        
+        // 入力検証
+        let trimmedLocation = location.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !trimmedLocation.isEmpty else {
+            DispatchQueue.main.async {
+                self.errorMessage = "場所は必須項目です"
+                self.isLoading = false
+            }
+            return
+        }
+        
+        let backgroundContext = persistenceController.newBackgroundContext()
+        let activityID = activity.objectID
+        
+        backgroundContext.perform {
+            do {
+                let activityToUpdate = try backgroundContext.existingObject(with: activityID)
+                
+                activityToUpdate.setValue(date, forKey: "date")
+                activityToUpdate.setValue(type.rawValue, forKey: "type")
+                activityToUpdate.setValue(trimmedLocation, forKey: "location")
+                activityToUpdate.setValue(notes, forKey: "notes")
+                activityToUpdate.setValue(max(1, min(5, rating)), forKey: "rating")
+                
+                try backgroundContext.save()
+                
+                DispatchQueue.main.async {
+                    self.fetchActivities()
+                    self.isLoading = false
+                }
+            } catch {
+                DispatchQueue.main.async {
+                    self.errorMessage = "活動の更新に失敗しました: \(error.localizedDescription)"
+                    self.isLoading = false
+                }
+                print("活動の更新に失敗: \(error)")
+            }
+        }
+    }
+    
+    // 特定の日付の活動を取得
+    func getActivities(for date: Date) -> [NSManagedObject] {
+        let calendar = Calendar.current
+        return activities.filter { activity in
+            guard let activityDate = activity.value(forKey: "date") as? Date else { return false }
+            return calendar.isDate(activityDate, inSameDayAs: date)
+        }
+    }
+    
+    // 期間内の活動を取得
+    func getActivities(from startDate: Date, to endDate: Date) -> [NSManagedObject] {
+        return activities.filter { activity in
+            guard let activityDate = activity.value(forKey: "date") as? Date else { return false }
+            return activityDate >= startDate && activityDate <= endDate
+        }
+    }
 }

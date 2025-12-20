@@ -134,6 +134,61 @@ class PracticeViewModel: ObservableObject {
         }
     }
     
+    // CRUD - Update: 練習の更新機能
+    func updatePractice(_ practice: NSManagedObject, focus: String, duration: Int, intensity: Int, learnings: String) {
+        isLoading = true
+        errorMessage = nil
+        
+        // 入力検証
+        let trimmedFocus = focus.trimmingCharacters(in: .whitespacesAndNewlines)
+        
+        guard !trimmedFocus.isEmpty else {
+            DispatchQueue.main.async {
+                self.errorMessage = "フォーカスエリアは必須項目です"
+                self.isLoading = false
+            }
+            return
+        }
+        
+        let backgroundContext = persistenceController.newBackgroundContext()
+        let practiceID = practice.objectID
+        
+        backgroundContext.perform {
+            do {
+                let practiceToUpdate = try backgroundContext.existingObject(with: practiceID)
+                
+                practiceToUpdate.setValue(trimmedFocus, forKey: "focus")
+                practiceToUpdate.setValue(max(0, min(300, duration)), forKey: "duration")
+                practiceToUpdate.setValue(max(1, min(5, intensity)), forKey: "intensity")
+                practiceToUpdate.setValue(learnings, forKey: "learnings")
+                
+                try backgroundContext.save()
+                
+                DispatchQueue.main.async {
+                    self.fetchPractices()
+                    self.isLoading = false
+                }
+            } catch {
+                DispatchQueue.main.async {
+                    self.errorMessage = "練習の更新に失敗しました: \(error.localizedDescription)"
+                    self.isLoading = false
+                }
+                print("練習の更新に失敗: \(error)")
+            }
+        }
+    }
+    
+    // 特定の期間内の練習を取得
+    func fetchPractices(from startDate: Date, to endDate: Date) -> [NSManagedObject] {
+        return practices.filter { practice in
+            guard let activity = practice.value(forKey: "activity") as? NSManagedObject,
+                  let date = activity.value(forKey: "date") as? Date else {
+                return false
+            }
+            return date >= startDate && date <= endDate
+        }
+    }
+    
     // 統計データの取得メソッド
     func getStatistics() -> (totalDuration: Int, averageIntensity: Double) {
         var totalDuration = 0
@@ -147,5 +202,22 @@ class PracticeViewModel: ObservableObject {
         let averageIntensity = practices.isEmpty ? 0.0 : Double(totalIntensity) / Double(practices.count)
         
         return (totalDuration, averageIntensity)
+    }
+    
+    // 期間別の統計を取得
+    func getStatistics(from startDate: Date, to endDate: Date) -> (totalDuration: Int, averageIntensity: Double, practiceCount: Int) {
+        let filteredPractices = fetchPractices(from: startDate, to: endDate)
+        
+        var totalDuration = 0
+        var totalIntensity = 0
+        
+        for practice in filteredPractices {
+            totalDuration += practice.value(forKey: "duration") as? Int ?? 0
+            totalIntensity += practice.value(forKey: "intensity") as? Int ?? 0
+        }
+        
+        let averageIntensity = filteredPractices.isEmpty ? 0.0 : Double(totalIntensity) / Double(filteredPractices.count)
+        
+        return (totalDuration, averageIntensity, filteredPractices.count)
     }
 }

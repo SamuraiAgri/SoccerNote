@@ -141,6 +141,67 @@ class MatchViewModel: ObservableObject {
         }
     }
     
+    // CRUD - Update: 試合の更新機能
+    func updateMatch(_ match: NSManagedObject, opponent: String, score: String, goalsScored: Int, assists: Int, playingTime: Int, performance: Int, photos: Data? = nil) {
+        isLoading = true
+        errorMessage = nil
+        
+        // 入力検証
+        let trimmedOpponent = opponent.trimmingCharacters(in: .whitespacesAndNewlines)
+        let trimmedScore = score.trimmingCharacters(in: .whitespacesAndNewlines)
+        
+        guard !trimmedOpponent.isEmpty, !trimmedScore.isEmpty else {
+            DispatchQueue.main.async {
+                self.errorMessage = "対戦相手とスコアは必須項目です"
+                self.isLoading = false
+            }
+            return
+        }
+        
+        let backgroundContext = persistenceController.newBackgroundContext()
+        let matchID = match.objectID
+        
+        backgroundContext.perform {
+            do {
+                let matchToUpdate = try backgroundContext.existingObject(with: matchID)
+                
+                matchToUpdate.setValue(trimmedOpponent, forKey: "opponent")
+                matchToUpdate.setValue(trimmedScore, forKey: "score")
+                matchToUpdate.setValue(max(0, min(20, goalsScored)), forKey: "goalsScored")
+                matchToUpdate.setValue(max(0, min(20, assists)), forKey: "assists")
+                matchToUpdate.setValue(max(0, min(120, playingTime)), forKey: "playingTime")
+                matchToUpdate.setValue(max(1, min(10, performance)), forKey: "performance")
+                if let photos = photos {
+                    matchToUpdate.setValue(photos, forKey: "photos")
+                }
+                
+                try backgroundContext.save()
+                
+                DispatchQueue.main.async {
+                    self.fetchMatches()
+                    self.isLoading = false
+                }
+            } catch {
+                DispatchQueue.main.async {
+                    self.errorMessage = "試合の更新に失敗しました: \(error.localizedDescription)"
+                    self.isLoading = false
+                }
+                print("試合の更新に失敗: \(error)")
+            }
+        }
+    }
+    
+    // 特定の期間内の試合を取得
+    func fetchMatches(from startDate: Date, to endDate: Date) -> [NSManagedObject] {
+        return matches.filter { match in
+            guard let activity = match.value(forKey: "activity") as? NSManagedObject,
+                  let date = activity.value(forKey: "date") as? Date else {
+                return false
+            }
+            return date >= startDate && date <= endDate
+        }
+    }
+    
     // 統計データの取得メソッド
     func getStatistics() -> (totalGoals: Int, totalAssists: Int, averagePerformance: Double) {
         var totalGoals = 0
@@ -156,5 +217,24 @@ class MatchViewModel: ObservableObject {
         let averagePerformance = matches.isEmpty ? 0.0 : Double(totalPerformance) / Double(matches.count)
         
         return (totalGoals, totalAssists, averagePerformance)
+    }
+    
+    // 期間別の統計を取得
+    func getStatistics(from startDate: Date, to endDate: Date) -> (totalGoals: Int, totalAssists: Int, averagePerformance: Double, matchCount: Int) {
+        let filteredMatches = fetchMatches(from: startDate, to: endDate)
+        
+        var totalGoals = 0
+        var totalAssists = 0
+        var totalPerformance = 0
+        
+        for match in filteredMatches {
+            totalGoals += match.value(forKey: "goalsScored") as? Int ?? 0
+            totalAssists += match.value(forKey: "assists") as? Int ?? 0
+            totalPerformance += match.value(forKey: "performance") as? Int ?? 0
+        }
+        
+        let averagePerformance = filteredMatches.isEmpty ? 0.0 : Double(totalPerformance) / Double(filteredMatches.count)
+        
+        return (totalGoals, totalAssists, averagePerformance, filteredMatches.count)
     }
 }
