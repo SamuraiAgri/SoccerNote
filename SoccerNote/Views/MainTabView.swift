@@ -9,43 +9,75 @@ class TabSelectionManager: ObservableObject {
 struct MainTabView: View {
     @Environment(\.managedObjectContext) private var viewContext
     @StateObject private var tabSelectionManager = TabSelectionManager()
+    @State private var showingReflectionSheet = false
     
     var body: some View {
-        TabView(selection: $tabSelectionManager.selectedTab) {
-            // 1. ホームタブ
-            HomeView()
-                .environment(\.managedObjectContext, viewContext)
-                .environmentObject(tabSelectionManager)
-                .tabItem {
-                    Label("ホーム", systemImage: "house.fill")
-                }
-                .tag(0)
+        ZStack(alignment: .bottom) {
+            TabView(selection: $tabSelectionManager.selectedTab) {
+                // 1. ホームタブ
+                HomeView()
+                    .environment(\.managedObjectContext, viewContext)
+                    .environmentObject(tabSelectionManager)
+                    .tabItem {
+                        Label("ホーム", systemImage: "house.fill")
+                    }
+                    .tag(0)
+                
+                // 2. 振り返りノートタブ
+                ReflectionListView()
+                    .environment(\.managedObjectContext, viewContext)
+                    .tabItem {
+                        Label("ノート", systemImage: "book.fill")
+                    }
+                    .tag(1)
+                
+                // 3. ダミータブ（中央のプラスボタン用）
+                Color.clear
+                    .tabItem {
+                        Label("", systemImage: "")
+                    }
+                    .tag(2)
+                
+                // 4. 記録タブ
+                QuickActivityAddView()
+                    .environment(\.managedObjectContext, viewContext)
+                    .tabItem {
+                        Label("記録", systemImage: "sportscourt.fill")
+                    }
+                    .tag(3)
+                
+                // 5. 設定タブ
+                SettingsView()
+                    .environment(\.managedObjectContext, viewContext)
+                    .tabItem {
+                        Label("設定", systemImage: "gear")
+                    }
+                    .tag(4)
+            }
+            .accentColor(Color.appPrimary)
             
-            // 2. 記録追加タブ
-            SimpleRecordAddView()
-                .environment(\.managedObjectContext, viewContext)
-                .tabItem {
-                    Label("記録", systemImage: "plus.circle.fill")
+            // 中央の振り返りボタン
+            Button(action: {
+                HapticFeedback.medium()
+                showingReflectionSheet = true
+            }) {
+                ZStack {
+                    Circle()
+                        .fill(AppDesign.primaryColor)
+                        .frame(width: 56, height: 56)
+                        .shadow(color: AppDesign.primaryColor.opacity(0.3), radius: 8, x: 0, y: 4)
+                    
+                    Image(systemName: "plus")
+                        .font(.title2)
+                        .fontWeight(.semibold)
+                        .foregroundColor(.white)
                 }
-                .tag(1)
-            
-            // 3. 分析タブ（統計と目標を統合）
-            AnalysisView()
-                .environment(\.managedObjectContext, viewContext)
-                .tabItem {
-                    Label("分析", systemImage: "chart.bar.fill")
-                }
-                .tag(2)
-            
-            // 4. 設定タブ
-            SettingsView()
-                .environment(\.managedObjectContext, viewContext)
-                .tabItem {
-                    Label("設定", systemImage: "gear")
-                }
-                .tag(3)
+            }
+            .offset(y: -20)
         }
-        .accentColor(Color.appPrimary)
+        .sheet(isPresented: $showingReflectionSheet) {
+            ReflectionAddView()
+        }
     }
 }
 
@@ -55,3 +87,4 @@ struct MainTabView_Previews: PreviewProvider {
             .environment(\.managedObjectContext, PersistenceController.preview.container.viewContext)
     }
 }
+
