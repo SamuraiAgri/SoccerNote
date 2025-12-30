@@ -23,11 +23,11 @@ struct MainTabView: View {
                     }
                     .tag(0)
                 
-                // 2. 振り返りノートタブ
-                ReflectionListView()
+                // 2. カレンダータブ
+                CalendarTabView()
                     .environment(\.managedObjectContext, viewContext)
                     .tabItem {
-                        Label("ノート", systemImage: "book.fill")
+                        Label("カレンダー", systemImage: "calendar")
                     }
                     .tag(1)
                 
@@ -38,11 +38,11 @@ struct MainTabView: View {
                     }
                     .tag(2)
                 
-                // 4. 記録タブ
-                QuickActivityAddView()
+                // 4. 統計タブ
+                GrowthInsightsView()
                     .environment(\.managedObjectContext, viewContext)
                     .tabItem {
-                        Label("記録", systemImage: "sportscourt.fill")
+                        Label("統計", systemImage: "chart.bar.fill")
                     }
                     .tag(3)
                 
