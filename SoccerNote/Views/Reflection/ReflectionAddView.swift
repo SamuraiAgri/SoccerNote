@@ -25,9 +25,10 @@ struct ReflectionAddView: View {
     
     private let totalSteps = 5
     
-    init() {
+    init(initialDate: Date = Date()) {
         let context = PersistenceController.shared.container.viewContext
         _reflectionViewModel = StateObject(wrappedValue: ReflectionViewModel(viewContext: context))
+        _date = State(initialValue: initialDate)
     }
     
     var body: some View {

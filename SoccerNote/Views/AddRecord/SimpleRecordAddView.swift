@@ -28,16 +28,9 @@ struct SimpleRecordAddView: View {
     @State private var showSuccess = false
     @State private var toast: ToastData?
     
-    // イニシャライザでUserDefaultsから選択された日付を取得
-    init() {
-        // UserDefaultsから選択された日付を取得
-        if let timestamp = UserDefaults.standard.object(forKey: "SelectedDateForNewRecord") as? TimeInterval {
-            _date = State(initialValue: Date(timeIntervalSince1970: timestamp))
-            // 使用後は削除（次回以降に影響しないように）
-            UserDefaults.standard.removeObject(forKey: "SelectedDateForNewRecord")
-        } else {
-            _date = State(initialValue: Date())
-        }
+    // イニシャライザで初期日付を設定
+    init(initialDate: Date = Date()) {
+        _date = State(initialValue: initialDate)
     }
     
     var body: some View {

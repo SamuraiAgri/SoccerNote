@@ -7,6 +7,8 @@ struct CalendarTabView: View {
     @StateObject private var reflectionViewModel: ReflectionViewModel
     @State private var selectedDate = Date()
     @State private var currentMonth = Date()
+    @State private var showingReflectionSheet = false
+    @State private var showingActivitySheet = false
     
     init() {
         let context = PersistenceController.shared.container.viewContext
@@ -35,6 +37,12 @@ struct CalendarTabView: View {
             }
             .background(Color(.systemGroupedBackground))
             .navigationTitle("カレンダー")
+            .sheet(isPresented: $showingReflectionSheet) {
+                ReflectionAddView(initialDate: selectedDate)
+            }
+            .sheet(isPresented: $showingActivitySheet) {
+                SimpleRecordAddView(initialDate: selectedDate)
+            }
         }
         .onAppear {
             activityViewModel.fetchActivities()
@@ -72,6 +80,33 @@ struct CalendarTabView: View {
                             .font(.caption)
                             .foregroundColor(.green)
                     }
+                }
+            }
+            
+            Divider()
+            
+            // アクションボタン
+            HStack(spacing: 12) {
+                if !hasReflection {
+                    Button(action: { showingReflectionSheet = true }) {
+                        Label("振り返りを追加", systemImage: "book.fill")
+                            .font(.subheadline)
+                            .foregroundColor(.white)
+                            .padding(.vertical, 10)
+                            .frame(maxWidth: .infinity)
+                            .background(AppDesign.primaryColor)
+                            .cornerRadius(8)
+                    }
+                }
+                
+                Button(action: { showingActivitySheet = true }) {
+                    Label("活動を追加", systemImage: "sportscourt.fill")
+                        .font(.subheadline)
+                        .foregroundColor(.white)
+                        .padding(.vertical, 10)
+                        .frame(maxWidth: .infinity)
+                        .background(Color.green)
+                        .cornerRadius(8)
                 }
             }
             
