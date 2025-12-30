@@ -111,7 +111,8 @@ struct RecordListView: View {
                         buttonAction: {
                             // タブを「追加」タブに切り替える処理
                             // MainTabViewのタブ選択を制御する仕組みが必要
-                            if let window = UIApplication.shared.windows.first {
+                            if let windowScene = UIApplication.shared.connectedScenes.first as? UIWindowScene,
+                               let window = windowScene.windows.first {
                                 if let tabBarController = window.rootViewController as? UITabBarController {
                                     tabBarController.selectedIndex = 1
                                 }

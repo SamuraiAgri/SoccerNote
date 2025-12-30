@@ -44,7 +44,7 @@ class ReminderViewModel: ObservableObject {
     // リマインダーを作成してスケジュールする
     private func createAndScheduleReminder(for activity: NSManagedObject, at reminderTime: Date) {
         guard let id = activity.value(forKey: "id") as? UUID,
-              let date = activity.value(forKey: "date") as? Date,
+              let _ = activity.value(forKey: "date") as? Date,
               let type = activity.value(forKey: "type") as? String,
               let location = activity.value(forKey: "location") as? String else {
             return
