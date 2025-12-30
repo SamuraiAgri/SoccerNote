@@ -55,6 +55,7 @@ struct HomeView: View {
                 activityViewModel.fetchActivities()
                 reflectionViewModel.fetchReflections()
             }
+            .bannerAd(position: .bottom)
         }
     }
     

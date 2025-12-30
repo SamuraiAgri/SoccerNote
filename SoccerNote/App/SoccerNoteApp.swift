@@ -1,14 +1,19 @@
 // SoccerNote/App/SoccerNoteApp.swift
 import SwiftUI
 import UserNotifications
+import GoogleMobileAds
 
 @main
 struct SoccerNoteApp: App {
     let persistenceController = PersistenceController.shared
+    @StateObject private var adMobManager = AdMobManager.shared
     
     init() {
         // アプリ起動時にUIの外観を設定
         AppDesign.setupAppearance()
+        
+        // AdMobの初期化
+        AdMobManager.shared.initialize()
         
         // メモリ警告通知を監視
         setupMemoryWarningObserver()
@@ -21,6 +26,7 @@ struct SoccerNoteApp: App {
         WindowGroup {
             MainTabView()
                 .environment(\.managedObjectContext, persistenceController.container.viewContext)
+                .environmentObject(adMobManager)
                 .accentColor(AppDesign.primaryColor)
                 .onAppear {
                     checkForPreviousCrash()

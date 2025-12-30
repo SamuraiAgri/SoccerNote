@@ -44,6 +44,7 @@ struct GrowthInsightsView: View {
         }
         .background(Color(.systemGroupedBackground))
         .navigationTitle("成長の記録")
+        .bannerAd(position: .bottom)
     }
     
     // MARK: - モチベーション推移

@@ -43,6 +43,7 @@ struct CalendarTabView: View {
             .sheet(isPresented: $showingActivitySheet) {
                 SimpleRecordAddView(initialDate: selectedDate)
             }
+            .bannerAd(position: .bottom)
         }
         .onAppear {
             activityViewModel.fetchActivities()

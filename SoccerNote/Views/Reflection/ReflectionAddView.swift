@@ -5,6 +5,7 @@ import CoreData
 struct ReflectionAddView: View {
     @Environment(\.managedObjectContext) private var viewContext
     @Environment(\.presentationMode) var presentationMode
+    @EnvironmentObject private var adMobManager: AdMobManager
     
     @StateObject private var reflectionViewModel: ReflectionViewModel
     
@@ -340,6 +341,11 @@ struct ReflectionAddView: View {
         
         HapticFeedback.success()
         showingSuccessAlert = true
+        
+        // インタースティシャル広告を表示
+        if let viewController = UIApplication.shared.getRootViewController() {
+            adMobManager.showInterstitialIfNeeded(from: viewController)
+        }
     }
 }
 

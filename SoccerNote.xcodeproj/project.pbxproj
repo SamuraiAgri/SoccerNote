@@ -6,13 +6,30 @@
 	objectVersion = 77;
 	objects = {
 
+/* Begin PBXBuildFile section */
+		2133C8922F049AC300A13138 /* GoogleMobileAds in Frameworks */ = {isa = PBXBuildFile; productRef = 2133C8912F049AC300A13138 /* GoogleMobileAds */; };
+/* End PBXBuildFile section */
+
 /* Begin PBXFileReference section */
 		2109DAD42D85B1DF00FECB18 /* SoccerNote.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = SoccerNote.app; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
 
+/* Begin PBXFileSystemSynchronizedBuildFileExceptionSet section */
+		2133C8942F049B2700A13138 /* Exceptions for "SoccerNote" folder in "SoccerNote" target */ = {
+			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
+			membershipExceptions = (
+				Info.plist,
+			);
+			target = 2109DAD32D85B1DF00FECB18 /* SoccerNote */;
+		};
+/* End PBXFileSystemSynchronizedBuildFileExceptionSet section */
+
 /* Begin PBXFileSystemSynchronizedRootGroup section */
 		2109DAD62D85B1DF00FECB18 /* SoccerNote */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
+			exceptions = (
+				2133C8942F049B2700A13138 /* Exceptions for "SoccerNote" folder in "SoccerNote" target */,
+			);
 			path = SoccerNote;
 			sourceTree = "<group>";
 		};
@@ -23,6 +40,7 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				2133C8922F049AC300A13138 /* GoogleMobileAds in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -65,6 +83,7 @@
 			);
 			name = SoccerNote;
 			packageProductDependencies = (
+				2133C8912F049AC300A13138 /* GoogleMobileAds */,
 			);
 			productName = SoccerNote;
 			productReference = 2109DAD42D85B1DF00FECB18 /* SoccerNote.app */;
@@ -94,6 +113,9 @@
 			);
 			mainGroup = 2109DACB2D85B1DF00FECB18;
 			minimizedProjectReferenceProxies = 1;
+			packageReferences = (
+				2133C8902F049AC300A13138 /* XCRemoteSwiftPackageReference "swift-package-manager-google-mobile-ads" */,
+			);
 			preferredProjectObjectVersion = 77;
 			productRefGroup = 2109DAD52D85B1DF00FECB18 /* Products */;
 			projectDirPath = "";
@@ -255,7 +277,9 @@
 				DEVELOPMENT_TEAM = 76D94XSD47;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = SoccerNote/Info.plist;
 				INFOPLIST_KEY_CFBundleDisplayName = "サッカー記録帳";
+				INFOPLIST_KEY_NSUserTrackingUsageDescription = "広告のパーソナライズに使用されます";
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
@@ -285,7 +309,9 @@
 				DEVELOPMENT_TEAM = 76D94XSD47;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = SoccerNote/Info.plist;
 				INFOPLIST_KEY_CFBundleDisplayName = "サッカー記録帳";
+				INFOPLIST_KEY_NSUserTrackingUsageDescription = "広告のパーソナライズに使用されます";
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
@@ -326,6 +352,25 @@
 			defaultConfigurationName = Release;
 		};
 /* End XCConfigurationList section */
+
+/* Begin XCRemoteSwiftPackageReference section */
+		2133C8902F049AC300A13138 /* XCRemoteSwiftPackageReference "swift-package-manager-google-mobile-ads" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/googleads/swift-package-manager-google-mobile-ads";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 11.0.0;
+			};
+		};
+/* End XCRemoteSwiftPackageReference section */
+
+/* Begin XCSwiftPackageProductDependency section */
+		2133C8912F049AC300A13138 /* GoogleMobileAds */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 2133C8902F049AC300A13138 /* XCRemoteSwiftPackageReference "swift-package-manager-google-mobile-ads" */;
+			productName = GoogleMobileAds;
+		};
+/* End XCSwiftPackageProductDependency section */
 	};
 	rootObject = 2109DACC2D85B1DF00FECB18 /* Project object */;
 }
