@@ -49,6 +49,10 @@ struct CalendarTabView: View {
             activityViewModel.fetchActivities()
             reflectionViewModel.fetchReflections()
         }
+        .onReceive(NotificationCenter.default.publisher(for: NSNotification.Name("ActivityDataChanged"))) { _ in
+            activityViewModel.fetchActivities()
+            reflectionViewModel.fetchReflections()
+        }
     }
     
     // MARK: - 選択日の詳細

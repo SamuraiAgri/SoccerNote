@@ -25,7 +25,6 @@ struct SimpleRecordAddView: View {
     @State private var intensity = 3
     
     @State private var isLoading = false
-    @State private var showSuccess = false
     @State private var toast: ToastData?
     
     // イニシャライザで初期日付を設定
@@ -325,16 +324,11 @@ struct SimpleRecordAddView: View {
                 .padding()
             }
             .navigationTitle("記録追加")
+            .navigationBarTitleDisplayMode(.inline)
+            .navigationBarItems(leading: Button("キャンセル") {
+                presentationMode.wrappedValue.dismiss()
+            })
             .toast($toast)
-            .alert(isPresented: $showSuccess) {
-                Alert(
-                    title: Text("保存完了"),
-                    message: Text("記録が保存されました"),
-                    dismissButton: .default(Text("OK")) {
-                        presentationMode.wrappedValue.dismiss()
-                    }
-                )
-            }
         }
     }
     
@@ -363,64 +357,54 @@ struct SimpleRecordAddView: View {
     private func saveRecord() {
         isLoading = true
         
-        // バックグラウンドで保存処理を実行
-        DispatchQueue.global(qos: .userInitiated).async {
-            let context = PersistenceController.shared.newBackgroundContext()
+        // 活動の保存 - 選択された日付をそのまま使用
+        let activity = NSEntityDescription.insertNewObject(forEntityName: "Activity", into: viewContext)
+        activity.setValue(UUID(), forKey: "id")
+        activity.setValue(date, forKey: "date") // 選択日時を正確に保存
+        activity.setValue(selectedType == "試合" ? "match" : "practice", forKey: "type")
+        activity.setValue(location, forKey: "location")
+        activity.setValue(notes, forKey: "notes")
+        activity.setValue(rating, forKey: "rating")
+        
+        // 活動タイプに応じた詳細情報の保存
+        if selectedType == "試合" {
+            let match = NSEntityDescription.insertNewObject(forEntityName: "Match", into: viewContext)
+            match.setValue(UUID(), forKey: "id")
+            match.setValue(opponent, forKey: "opponent")
+            match.setValue(score, forKey: "score")
+            match.setValue(goalsScored, forKey: "goalsScored")
+            match.setValue(assists, forKey: "assists")
+            match.setValue(90, forKey: "playingTime") // デフォルト値
+            match.setValue(rating, forKey: "performance") // 評価と同じ値をデフォルトに
+            match.setValue(activity, forKey: "activity")
+        } else {
+            let practice = NSEntityDescription.insertNewObject(forEntityName: "Practice", into: viewContext)
+            practice.setValue(UUID(), forKey: "id")
+            practice.setValue(focus, forKey: "focus")
+            practice.setValue(duration, forKey: "duration")
+            practice.setValue(intensity, forKey: "intensity")
+            practice.setValue(notes, forKey: "learnings")
+            practice.setValue(activity, forKey: "activity")
+        }
+        
+        do {
+            try viewContext.save()
+            isLoading = false
+            HapticFeedback.success()
+            toast = ToastData(type: .success, message: "記録が保存されました")
             
-            context.performAndWait {
-                // 活動の保存 - 選択された日付をそのまま使用
-                let activity = NSEntityDescription.insertNewObject(forEntityName: "Activity", into: context)
-                activity.setValue(UUID(), forKey: "id")
-                activity.setValue(self.date, forKey: "date") // 選択日時を正確に保存
-                activity.setValue(selectedType == "試合" ? "match" : "practice", forKey: "type")
-                activity.setValue(location, forKey: "location")
-                activity.setValue(notes, forKey: "notes")
-                activity.setValue(rating, forKey: "rating")
-                
-                // 活動タイプに応じた詳細情報の保存
-                if selectedType == "試合" {
-                    let match = NSEntityDescription.insertNewObject(forEntityName: "Match", into: context)
-                    match.setValue(UUID(), forKey: "id")
-                    match.setValue(opponent, forKey: "opponent")
-                    match.setValue(score, forKey: "score")
-                    match.setValue(goalsScored, forKey: "goalsScored")
-                    match.setValue(assists, forKey: "assists")
-                    match.setValue(90, forKey: "playingTime") // デフォルト値
-                    match.setValue(rating, forKey: "performance") // 評価と同じ値をデフォルトに
-                    match.setValue(activity, forKey: "activity")
-                } else {
-                    let practice = NSEntityDescription.insertNewObject(forEntityName: "Practice", into: context)
-                    practice.setValue(UUID(), forKey: "id")
-                    practice.setValue(focus, forKey: "focus")
-                    practice.setValue(duration, forKey: "duration")
-                    practice.setValue(intensity, forKey: "intensity")
-                    practice.setValue(notes, forKey: "learnings")
-                    practice.setValue(activity, forKey: "activity")
-                }
-                
-                do {
-                    try context.save()
-                    
-                    // メインスレッドで UI 更新
-                    DispatchQueue.main.async {
-                        isLoading = false
-                        HapticFeedback.success()
-                        toast = ToastData(type: .success, message: "記録が保存されました")
-                        
-                        // 少し遅らせて画面を閉じる
-                        DispatchQueue.main.asyncAfter(deadline: .now() + 1.5) {
-                            presentationMode.wrappedValue.dismiss()
-                        }
-                    }
-                } catch {
-                    print("保存エラー: \(error)")
-                    DispatchQueue.main.async {
-                        isLoading = false
-                        HapticFeedback.error()
-                        toast = ToastData(type: .error, message: "保存に失敗しました")
-                    }
-                }
+            // データ更新を通知
+            NotificationCenter.default.post(name: NSNotification.Name("ActivityDataChanged"), object: nil)
+            
+            // 少し遅らせて画面を閉じる
+            DispatchQueue.main.asyncAfter(deadline: .now() + 1.0) {
+                presentationMode.wrappedValue.dismiss()
             }
+        } catch {
+            print("保存エラー: \(error)")
+            isLoading = false
+            HapticFeedback.error()
+            toast = ToastData(type: .error, message: "保存に失敗しました: \(error.localizedDescription)")
         }
     }
 }
