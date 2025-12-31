@@ -73,7 +73,7 @@ struct MainTabView: View {
                         .foregroundColor(.white)
                 }
             }
-            .offset(y: -20)
+            .padding(.bottom, 8)
         }
         .sheet(isPresented: $showingReflectionSheet) {
             ReflectionAddView()

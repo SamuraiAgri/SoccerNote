@@ -18,6 +18,7 @@ class AdMobManager: NSObject, ObservableObject {
     
     @Published var interstitialAd: GADInterstitialAd?
     @Published var isInterstitialReady = false
+    @Published var isInitialized = false
     
     private var interstitialLoadCount = 0
     private let showInterstitialEvery = 3 // 3回に1回表示
@@ -27,10 +28,19 @@ class AdMobManager: NSObject, ObservableObject {
     }
     
     func initialize() {
-        GADMobileAds.sharedInstance().start { status in
-            print("AdMob SDK initialized")
+        // 既に初期化済みの場合はスキップ
+        guard !isInitialized else {
+            print("AdMob SDK already initialized")
+            return
+        }
+        
+        print("Initializing AdMob SDK...")
+        GADMobileAds.sharedInstance().start { [weak self] status in
+            print("AdMob SDK initialized successfully")
+            print("Adapter statuses: \(status.adapterStatusesByClassName)")
+            self?.isInitialized = true
             // 初期化後にインタースティシャル広告をロード
-            self.loadInterstitial()
+            self?.loadInterstitial()
         }
     }
     
